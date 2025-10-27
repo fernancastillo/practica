@@ -1,6 +1,6 @@
 // src/pages/tienda/Carrito.jsx
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Alert, Button } from 'react-bootstrap';
+import { Container, Row, Col, Alert, Button, Modal } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../utils/tienda/authService';
 import { cartService } from '../../utils/tienda/cartService';
@@ -8,10 +8,14 @@ import CartItem from '../../components/tienda/cart/CartItem';
 import CartSummary from '../../components/tienda/cart/CartSummary';
 import EmptyCart from '../../components/tienda/cart/EmptyCart';
 
+// Importar la imagen del carrito
+import carritoImage from '../../assets/tienda/carrito.png';
+
 const Carrito = () => {
   const [cartItems, setCartItems] = useState([]);
   const [user, setUser] = useState(null);
   const [showAlert, setShowAlert] = useState(false);
+  const [showClearCartModal, setShowClearCartModal] = useState(false);
   const navigate = useNavigate();
 
   // Cargar carrito desde localStorage
@@ -36,7 +40,8 @@ const Carrito = () => {
 
   useEffect(() => {
     loadCart();
-    setUser(authService.getCurrentUser());
+    const currentUser = authService.getCurrentUser();
+    setUser(currentUser);
     
     // Escuchar eventos de actualización del carrito
     const handleCartUpdate = () => {
@@ -44,10 +49,19 @@ const Carrito = () => {
       loadCart();
     };
     
+    // Escuchar cambios de autenticación
+    const handleAuthChange = () => {
+      const currentUser = authService.getCurrentUser();
+      setUser(currentUser);
+      loadCart(); // Recargar carrito cuando cambia el usuario
+    };
+
     window.addEventListener('cartUpdated', handleCartUpdate);
+    window.addEventListener('authStateChanged', handleAuthChange);
     
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
+      window.removeEventListener('authStateChanged', handleAuthChange);
     };
   }, []);
 
@@ -79,18 +93,30 @@ const Carrito = () => {
     }
   };
 
+  // Vaciar carrito con confirmación
+  const handleClearCartClick = () => {
+    setShowClearCartModal(true);
+  };
+
+  const confirmClearCart = () => {
+    cartService.clearCart();
+    setCartItems([]);
+    window.dispatchEvent(new Event('cartUpdated'));
+    setShowClearCartModal(false);
+  };
+
   // Finalizar compra
-  const handleCheckout = () => {
+  const handleCheckout = (totalFinal) => {
     if (!user) {
       navigate('/login');
       return;
     }
 
     try {
-      console.log('✅ Compra realizada. Total:', cartService.calculateTotal(cartItems));
+      console.log('✅ Compra realizada. Total final:', totalFinal);
       
-      // Procesar checkout
-      cartService.processCheckout(cartItems);
+      // Procesar checkout con el total final
+      cartService.processCheckout(cartItems, totalFinal);
       
       // Vaciar carrito
       cartService.clearCart();
@@ -159,29 +185,58 @@ const Carrito = () => {
         
         <Row className="mb-4">
           <Col>
-            <h1 
-              className="text-center mb-3"
-              style={{
-                fontFamily: "'Indie Flower', cursive",
-                color: '#000000',
-                fontWeight: 'bold',
-                fontSize: '2.5rem',
-                textShadow: '2px 2px 4px rgba(255, 255, 255, 0.8)'
-              }}
-            >
-              🛒 Mi Carrito de Compras
-            </h1>
-            <p 
-              className="text-center fs-5"
-              style={{
-                color: '#000000',
-                fontWeight: '500',
-                textShadow: '1px 1px 2px rgba(255, 255, 255, 0.7)',
-                fontFamily: "'Lato', sans-serif"
-              }}
-            >
-              Revisa y modifica los productos en tu carrito
-            </p>
+            <div className="text-center">
+              {/* Imagen del carrito en lugar del texto */}
+              <div className="mb-3">
+                <img
+                  src={carritoImage}
+                  alt="Mi Carrito de Compras"
+                  className="img-fluid"
+                  style={{
+                    maxWidth: '600px',
+                    width: '100%',
+                    filter: 'drop-shadow(3px 3px 6px rgba(0,0,0,0.8))'
+                  }}
+                  onError={(e) => {
+                    // Fallback si la imagen no carga
+                    e.target.style.display = 'none';
+                    // Mostrar texto alternativo
+                    const fallbackElement = document.getElementById('fallback-title');
+                    if (fallbackElement) {
+                      fallbackElement.style.display = 'block';
+                    }
+                  }}
+                />
+              </div>
+              
+              {/* Texto alternativo que se muestra si la imagen no carga */}
+              <h1 
+                id="fallback-title"
+                className="text-center mb-3"
+                style={{
+                  fontFamily: "'Indie Flower', cursive",
+                  color: '#000000',
+                  fontWeight: 'bold',
+                  fontSize: '2.5rem',
+                  textShadow: '2px 2px 4px rgba(255, 255, 255, 0.8)',
+                  display: 'none' /* Oculto por defecto */
+                }}
+              >
+                🛒 Mi Carrito de Compras
+              </h1>
+              
+              <p 
+                className="text-center fs-5"
+                style={{
+                  color: '#000000',
+                  fontWeight: '500',
+                  textShadow: '1px 1px 2px rgba(255, 255, 255, 0.7)',
+                  fontFamily: "'Lato', sans-serif"
+                }}
+              >
+                Revisa y modifica los productos en tu carrito
+              </p>
+            </div>
           </Col>
         </Row>
 
@@ -243,11 +298,7 @@ const Carrito = () => {
                         transition: 'all 0.3s ease',
                         fontFamily: "'Lato', sans-serif"
                       }}
-                      onClick={() => {
-                        cartService.clearCart();
-                        setCartItems([]);
-                        window.dispatchEvent(new Event('cartUpdated'));
-                      }}
+                      onClick={handleClearCartClick}
                       onMouseEnter={(e) => {
                         e.target.style.transform = 'translateY(-2px)';
                         e.target.style.boxShadow = '0 6px 20px rgba(220, 53, 69, 0.4)';
@@ -277,6 +328,97 @@ const Carrito = () => {
           </Col>
         </Row>
       </Container>
+
+      {/* Modal de confirmación para vaciar carrito */}
+      <Modal
+        show={showClearCartModal}
+        onHide={() => setShowClearCartModal(false)}
+        centered
+        style={{ fontFamily: "'Lato', sans-serif" }}
+      >
+        <Modal.Header 
+          closeButton
+          className="border-3 border-dark"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <Modal.Title className="fw-bold" style={{ color: '#000000' }}>
+            <span style={{ fontFamily: "'Indie Flower', cursive" }}>
+              🗑️ Vaciar Carrito
+            </span>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <div className="text-center">
+            <div className="mb-3">
+              <div 
+                className="display-1"
+                style={{ color: '#000000' }}
+              >
+                🛒
+              </div>
+            </div>
+            <h5 
+              className="fw-bold mb-3"
+              style={{ 
+                color: '#000000',
+              }}
+            >
+              ¿Estás seguro de que quieres vaciar el carrito?
+            </h5>
+            <p 
+              className="mb-3 fw-semibold"
+              style={{ 
+                color: '#000000',
+                fontSize: '1.1rem'
+              }}
+            >
+              Se eliminarán {cartItems.reduce((sum, item) => sum + item.cantidad, 0)} productos
+            </p>
+            <p 
+              className="fw-semibold text-danger"
+              style={{ color: '#000000' }}
+            >
+              ⚠️ Esta acción no se puede deshacer
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer
+          className="border-3 border-dark"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <Button 
+            variant="secondary" 
+            onClick={() => setShowClearCartModal(false)}
+            className="rounded-pill px-4 py-2 border-3 border-dark fw-bold"
+            style={{
+              backgroundColor: '#dedd8ff5',
+              color: '#000000'
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            variant="danger" 
+            onClick={confirmClearCart}
+            className="rounded-pill px-4 py-2 border-3 border-dark fw-bold"
+            style={{
+              background: 'linear-gradient(135deg, #dc3545, #c82333)',
+              color: '#FFFFFF',
+              border: 'none'
+            }}
+          >
+            Sí, Vaciar Carrito
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

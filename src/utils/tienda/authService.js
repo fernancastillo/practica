@@ -1,85 +1,117 @@
+// src/utils/tienda/authService.js
 import { saveLocalstorage, loadFromLocalstorage, deleteFromLocalstorage } from '../localstorageHelper';
 
 const AUTH_KEY = 'auth_user';
 const USER_TYPE_KEY = 'user_type';
-const USUARIOS_KEY = 'junimo_usuarios';
+const USUARIOS_KEY = 'app_usuarios';
 
 export const authService = {
   login: async (email, password) => {
     try {
-      console.log('🔐 LOGIN INICIADO - Email:', email, 'Password:', password);
+      console.log('🔐 LOGIN INICIADO - Email:', email);
       
       // 1. PRIMERO buscar en usuarios registrados (localStorage)
       const usuariosRegistrados = loadFromLocalstorage(USUARIOS_KEY) || [];
-      console.log('🔐 Usuarios en localStorage:', usuariosRegistrados);
+      console.log('🔐 Usuarios en localStorage:', usuariosRegistrados.length);
       
-      // Buscar usuario específico
+      // Buscar usuario específico - usando "correo" y "contrasenha" del JSON
       const usuarioRegistrado = usuariosRegistrados.find(u => {
-        console.log('🔐 Comparando:', u.email, 'con', email, 'y password:', u.contrasenha, 'con', password);
-        return u.email === email && u.contrasenha === password;
+        const emailMatch = u.correo === email;
+        const passwordMatch = u.contrasenha === password;
+        console.log(`🔐 Verificando usuario: ${u.correo}, email match: ${emailMatch}, password match: ${passwordMatch}`);
+        return emailMatch && passwordMatch;
       });
       
-      console.log('🔐 Usuario encontrado:', usuarioRegistrado);
+      console.log('🔐 Usuario encontrado en registro:', usuarioRegistrado ? 'Sí' : 'No');
       
       if (usuarioRegistrado) {
-        console.log('✅ USUARIO ENCONTRADO - Login exitoso');
+        console.log('✅ USUARIO ENCONTRADO EN REGISTRO - Login exitoso');
+        console.log('👤 Tipo de usuario:', usuarioRegistrado.tipo);
+        console.log('👤 Datos completos del usuario:', usuarioRegistrado);
+        
+        // ✅ CORREGIDO: Normalizar el tipo de usuario
+        const tipoUsuario = usuarioRegistrado.tipo === 'Admin' ? 'Administrador' : usuarioRegistrado.tipo;
+        console.log('👤 Tipo de usuario normalizado:', tipoUsuario);
+        
         const userData = {
-          id: usuarioRegistrado.id,
+          id: usuarioRegistrado.run,
           nombre: usuarioRegistrado.nombre,
-          apellido: usuarioRegistrado.apellido,
-          email: usuarioRegistrado.email,
-          type: usuarioRegistrado.tipo || 'Cliente',
+          apellido: usuarioRegistrado.apellidos || '',
+          email: usuarioRegistrado.correo,
+          type: tipoUsuario, // ✅ Usar el tipo normalizado
           loginTime: new Date().toISOString(),
-          descuento: usuarioRegistrado.descuento || '0%',
-          fechaNacimiento: usuarioRegistrado.fechaNacimiento
+          run: usuarioRegistrado.run,
+          direccion: usuarioRegistrado.direccion,
+          comuna: usuarioRegistrado.comuna,
+          region: usuarioRegistrado.region
         };
         
         saveLocalstorage(AUTH_KEY, userData);
-        saveLocalstorage(USER_TYPE_KEY, usuarioRegistrado.tipo || 'Cliente');
+        saveLocalstorage(USER_TYPE_KEY, tipoUsuario); // ✅ Guardar tipo normalizado
         
         console.log('✅ Usuario guardado en sesión:', userData);
         
-        // ✅ AGREGAR ESTA LÍNEA CRÍTICA - Notificar a otros componentes
+        // ✅ CORREGIDO: Determinar redirección basada en el tipo de usuario normalizado
+        const redirectTo = tipoUsuario === 'Administrador' ? '/admin/dashboard' : '/index';
+        console.log('🔄 Redirigiendo a:', redirectTo);
+        
+        // Notificar a otros componentes
         window.dispatchEvent(new Event('authStateChanged'));
         
         return {
           success: true,
           user: userData,
-          redirectTo: '/index'
+          redirectTo: redirectTo
         };
       }
       
       // 2. LUEGO buscar en usuarios.json (solo para admins predefinidos)
       try {
+        console.log('🔐 Buscando en usuarios predefinidos...');
         const usuariosData = await import('../../data/usuarios.json');
-        const userPredefinido = usuariosData.default.find(u => 
-          u.correo === email && u.contrasenha === password
-        );
+        const userPredefinido = usuariosData.default.find(u => {
+          const emailMatch = u.correo === email;
+          const passwordMatch = u.contrasenha === password;
+          console.log(`🔐 Verificando usuario predefinido: ${u.correo}, tipo: ${u.tipo}, email match: ${emailMatch}, password match: ${passwordMatch}`);
+          return emailMatch && passwordMatch;
+        });
         
         if (userPredefinido) {
           console.log('✅ Usuario predefinido encontrado');
+          console.log('👤 Tipo de usuario predefinido:', userPredefinido.tipo);
+          console.log('👤 Datos completos del usuario predefinido:', userPredefinido);
+          
+          // ✅ CORREGIDO: Normalizar el tipo de usuario para predefinidos también
+          const tipoUsuario = userPredefinido.tipo === 'Admin' ? 'Administrador' : userPredefinido.tipo;
+          console.log('👤 Tipo de usuario predefinido normalizado:', tipoUsuario);
+          
           const userData = {
             id: userPredefinido.run,
             nombre: userPredefinido.nombre,
+            apellido: userPredefinido.apellidos || '',
             email: userPredefinido.correo,
-            type: userPredefinido.tipo,
-            loginTime: new Date().toISOString()
+            type: tipoUsuario, // ✅ Usar el tipo normalizado
+            loginTime: new Date().toISOString(),
+            run: userPredefinido.run
           };
           
           saveLocalstorage(AUTH_KEY, userData);
-          saveLocalstorage(USER_TYPE_KEY, userPredefinido.tipo);
+          saveLocalstorage(USER_TYPE_KEY, tipoUsuario); // ✅ Guardar tipo normalizado
           
-          // ✅ AGREGAR ESTA LÍNEA TAMBIÉN
+          // ✅ CORREGIDO: Determinar redirección basada en el tipo de usuario normalizado
+          const redirectTo = tipoUsuario === 'Administrador' ? '/admin/dashboard' : '/index';
+          console.log('🔄 Redirigiendo a:', redirectTo);
+          
           window.dispatchEvent(new Event('authStateChanged'));
           
           return {
             success: true,
             user: userData,
-            redirectTo: userPredefinido.tipo === 'Admin' ? '/admin/dashboard' : '/index'
+            redirectTo: redirectTo
           };
         }
       } catch (jsonError) {
-        console.log('ℹ️ No hay usuarios predefinidos, usando solo registro');
+        console.log('ℹ️ No hay usuarios predefinidos, usando solo registro:', jsonError);
       }
       
       console.log('❌ USUARIO NO ENCONTRADO - Login fallido');
@@ -101,7 +133,6 @@ export const authService = {
     deleteFromLocalstorage(AUTH_KEY);
     deleteFromLocalstorage(USER_TYPE_KEY);
     
-    // ✅ AGREGAR ESTA LÍNEA TAMBIÉN PARA LOGOUT
     window.dispatchEvent(new Event('authStateChanged'));
     
     window.location.href = '/index';
@@ -120,19 +151,23 @@ export const authService = {
   },
 
   isAdmin: () => {
-    return loadFromLocalstorage(USER_TYPE_KEY) === 'Admin';
+    const userType = loadFromLocalstorage(USER_TYPE_KEY);
+    console.log('🔍 Verificando si es admin - userType:', userType);
+    // ✅ CORREGIDO: Verificar tanto "Admin" como "Administrador"
+    return userType === 'Administrador' || userType === 'Admin';
   },
 
   isClient: () => {
-    return loadFromLocalstorage(USER_TYPE_KEY) === 'Cliente';
+    const userType = loadFromLocalstorage(USER_TYPE_KEY);
+    console.log('🔍 Verificando si es cliente - userType:', userType);
+    return userType === 'Cliente';
   },
 
   emailExiste: (email) => {
     const usuariosRegistrados = loadFromLocalstorage(USUARIOS_KEY) || [];
-    return usuariosRegistrados.some(usuario => usuario.email === email);
+    return usuariosRegistrados.some(usuario => usuario.correo === email);
   },
 
-  // ✅ AGREGAR ESTA FUNCIÓN PARA FORZAR ACTUALIZACIÓN
   notifyAuthChange: () => {
     window.dispatchEvent(new Event('authStateChanged'));
   }

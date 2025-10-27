@@ -1,11 +1,13 @@
-// src/pages/tienda/Login.jsx
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Form, Button, Alert, InputGroup } from 'react-bootstrap';
+// src/components/tienda/login/LoginComponent.jsx
+import React, { useState } from 'react';
+import { Container, Row, Col, Card, Form, Button, Alert, InputGroup, Modal } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../utils/tienda/authService';
+
+// Importar la imagen del login
 import loginImage from '../../assets/tienda/login.png';
 
-const Login = () => {
+const LoginComponent = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -13,25 +15,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [loginResult, setLoginResult] = useState({});
   const navigate = useNavigate();
-
-  // Verificar si ya está autenticado
-  useEffect(() => {
-    if (authService.isAuthenticated()) {
-      const userType = authService.getUserType();
-      const currentUser = authService.getCurrentUser();
-      console.log('🔄 Usuario ya autenticado - Redirigiendo...');
-      console.log('👤 Tipo de usuario:', userType);
-      console.log('👤 Usuario actual:', currentUser);
-      
-      // ✅ CORREGIDO: Usar la misma lógica que en authService
-      const isAdmin = userType === 'Administrador' || userType === 'Admin';
-      const redirectTo = isAdmin ? '/admin/dashboard' : '/index';
-      
-      console.log('🔄 Redirigiendo a:', redirectTo);
-      navigate(redirectTo, { replace: true });
-    }
-  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,31 +35,43 @@ const Login = () => {
     setError('');
 
     try {
-      console.log('🔄 Iniciando proceso de login...');
-      console.log('📧 Email:', formData.email);
-      
       const result = await authService.login(formData.email, formData.password);
       
-      console.log('📋 Resultado del login:', result);
-      
       if (result.success) {
-        console.log('✅ Login exitoso');
-        console.log('👤 Usuario logueado:', result.user);
-        console.log('👤 Tipo de usuario normalizado:', result.user.type);
-        console.log('🔄 Redirigiendo a:', result.redirectTo);
-        
-        // Redirección inmediata
-        navigate(result.redirectTo, { replace: true });
+        setLoginResult({
+          success: true,
+          user: result.user,
+          redirectTo: result.redirectTo
+        });
+        setShowSuccessModal(true);
       } else {
-        console.log('❌ Error en login:', result.error);
-        setError(result.error);
+        setLoginResult({
+          success: false,
+          error: result.error
+        });
+        setShowErrorModal(true);
       }
     } catch (err) {
-      console.error('💥 Error en login:', err);
-      setError('Error al iniciar sesión. Por favor, intenta nuevamente.');
+      setLoginResult({
+        success: false,
+        error: 'Error al iniciar sesión'
+      });
+      setShowErrorModal(true);
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSuccessContinue = () => {
+    setShowSuccessModal(false);
+    navigate(loginResult.redirectTo || '/index');
+  };
+
+  const handleErrorContinue = () => {
+    setShowErrorModal(false);
+    // Limpiar contraseña al continuar después de error
+    setFormData(prev => ({ ...prev, password: '' }));
   };
 
   const togglePasswordVisibility = () => {
@@ -94,10 +93,11 @@ const Login = () => {
       <div style={{ height: '80px' }}></div>
 
       <Container>
-        {/* Títulos con imagen */}
+        {/* Títulos fuera de la card - Con imagen */}
         <Row className="justify-content-center mb-4">
           <Col md={8} lg={6}>
             <div className="text-center">
+              {/* Imagen del login en lugar del texto */}
               <div className="mb-3">
                 <img
                   src={loginImage}
@@ -109,7 +109,9 @@ const Login = () => {
                     filter: 'drop-shadow(3px 3px 6px rgba(0,0,0,0.8))'
                   }}
                   onError={(e) => {
+                    // Fallback si la imagen no carga
                     e.target.style.display = 'none';
+                    // Mostrar texto alternativo
                     const fallbackElement = document.getElementById('fallback-title');
                     if (fallbackElement) {
                       fallbackElement.style.display = 'block';
@@ -118,6 +120,7 @@ const Login = () => {
                 />
               </div>
               
+              {/* Texto alternativo que se muestra si la imagen no carga */}
               <h2 
                 id="fallback-title"
                 className="fw-bold mb-3"
@@ -126,7 +129,7 @@ const Login = () => {
                   color: '#000000',
                   fontSize: '2.5rem',
                   textShadow: '2px 2px 4px rgba(255, 255, 255, 0.8)',
-                  display: 'none'
+                  display: 'none' /* Oculto por defecto */
                 }}
               >
                 Iniciar Sesión
@@ -237,6 +240,7 @@ const Login = () => {
                   </Form.Group>
 
                   <Button 
+                    variant="primary" 
                     type="submit" 
                     className="w-100 rounded-pill py-3 border-3 border-dark fw-bold mb-4"
                     disabled={loading}
@@ -327,8 +331,200 @@ const Login = () => {
           </Col>
         </Row>
       </Container>
+
+      {/* Modal de éxito */}
+      <Modal
+        show={showSuccessModal}
+        onHide={handleSuccessContinue}
+        centered
+        size="lg"
+        style={{ fontFamily: "'Lato', sans-serif" }}
+      >
+        <Modal.Header 
+          className="border-3 border-dark"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <Modal.Title className="fw-bold text-center w-100" style={{ color: '#000000' }}>
+            <span style={{ fontFamily: "'Indie Flower', cursive", fontSize: '1.8rem' }}>
+              ✅ ¡Inicio de Sesión Exitoso!
+            </span>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body
+          className="text-center py-4"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <div className="mb-4">
+            <div 
+              className="display-1 mb-3"
+              style={{ color: '#000000' }}
+            >
+              🎉
+            </div>
+            <h4 
+              className="fw-bold mb-3"
+              style={{ 
+                color: '#000000',
+                fontFamily: "'Indie Flower', cursive"
+              }}
+            >
+              ¡Bienvenido de vuelta, {loginResult.user?.nombre}!
+            </h4>
+            <p 
+              className="fs-5"
+              style={{ 
+                color: '#000000',
+                fontWeight: '500'
+              }}
+            >
+              Has iniciado sesión correctamente.
+            </p>
+            <p 
+              className="fs-6"
+              style={{ 
+                color: '#000000',
+                fontWeight: '400'
+              }}
+            >
+              {loginResult.user?.type === 'Administrador' 
+                ? 'Serás redirigido al panel de administración.' 
+                : 'Serás redirigido a la página principal.'}
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer
+          className="border-3 border-dark justify-content-center"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <Button 
+            variant="primary" 
+            onClick={handleSuccessContinue}
+            className="rounded-pill px-5 py-2 border-3 border-dark fw-bold"
+            style={{
+              backgroundColor: '#dedd8ff5',
+              color: '#000000',
+              transition: 'all 0.3s ease',
+              fontFamily: "'Lato', sans-serif",
+              fontSize: '1.1rem'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 8px 20px rgba(222, 221, 143, 0.6)';
+              e.target.style.backgroundColor = '#FFD700';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+              e.target.style.backgroundColor = '#dedd8ff5';
+            }}
+          >
+            Continuar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal de error */}
+      <Modal
+        show={showErrorModal}
+        onHide={handleErrorContinue}
+        centered
+        size="lg"
+        style={{ fontFamily: "'Lato', sans-serif" }}
+      >
+        <Modal.Header 
+          className="border-3 border-dark"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <Modal.Title className="fw-bold text-center w-100" style={{ color: '#000000' }}>
+            <span style={{ fontFamily: "'Indie Flower', cursive", fontSize: '1.8rem' }}>
+              ❌ Error al Iniciar Sesión
+            </span>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body
+          className="text-center py-4"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <div className="mb-4">
+            <div 
+              className="display-1 mb-3"
+              style={{ color: '#000000' }}
+            >
+              😔
+            </div>
+            <h4 
+              className="fw-bold mb-3"
+              style={{ 
+                color: '#000000',
+                fontFamily: "'Indie Flower', cursive"
+              }}
+            >
+              No se pudo iniciar sesión
+            </h4>
+            <p 
+              className="fs-5"
+              style={{ 
+                color: '#000000',
+                fontWeight: '500'
+              }}
+            >
+              {loginResult.error}
+            </p>
+            <p 
+              className="fs-6"
+              style={{ 
+                color: '#000000',
+                fontWeight: '400'
+              }}
+            >
+              Por favor, verifica tus credenciales e intenta nuevamente.
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer
+          className="border-3 border-dark justify-content-center"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <Button 
+            variant="primary" 
+            onClick={handleErrorContinue}
+            className="rounded-pill px-5 py-2 border-3 border-dark fw-bold"
+            style={{
+              backgroundColor: '#dedd8ff5',
+              color: '#000000',
+              transition: 'all 0.3s ease',
+              fontFamily: "'Lato', sans-serif",
+              fontSize: '1.1rem'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 8px 20px rgba(222, 221, 143, 0.6)';
+              e.target.style.backgroundColor = '#FFD700';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+              e.target.style.backgroundColor = '#dedd8ff5';
+            }}
+          >
+            Intentar Nuevamente
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };
 
-export default Login;
+export default LoginComponent;

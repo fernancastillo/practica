@@ -1,3 +1,4 @@
+// src/utils/tienda/registroValidaciones.js
 export const registroValidaciones = {
   validarNombre(nombre) {
     return nombre.length >= 3 && /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(nombre);
@@ -8,9 +9,46 @@ export const registroValidaciones = {
   },
 
   validarRUN(run) {
-    // Formato: 12345678-9 (opcional el guion)
-    const runRegex = /^[0-9]{7,8}-?[0-9kK]{1}$/;
-    return runRegex.test(run);
+    // Formato: 8-9 dígitos sin puntos ni guion
+    const runRegex = /^[0-9]{8,9}$/;
+    if (!runRegex.test(run)) {
+      return {
+        valido: false,
+        mensaje: 'El RUN debe tener 8-9 dígitos sin puntos ni guion'
+      };
+    }
+
+    // Validar dígito verificador usando algoritmo módulo 11
+    return this.validarDigitoVerificadorRUN(run);
+  },
+
+  validarDigitoVerificadorRUN(run) {
+    // Algoritmo módulo 11 para RUN chileno
+    const runSinDV = run.slice(0, -1);
+    const digitoVerificador = run.slice(-1).toUpperCase();
+    
+    let suma = 0;
+    let multiplicador = 2;
+    
+    // Recorrer el RUN de derecha a izquierda
+    for (let i = runSinDV.length - 1; i >= 0; i--) {
+      suma += parseInt(runSinDV.charAt(i)) * multiplicador;
+      multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
+    }
+    
+    const resto = suma % 11;
+    let dvCalculado = 11 - resto;
+    
+    // Casos especiales del dígito verificador
+    if (dvCalculado === 11) dvCalculado = 0;
+    if (dvCalculado === 10) dvCalculado = 'K';
+    
+    const valido = dvCalculado.toString() === digitoVerificador;
+    
+    return {
+      valido: valido,
+      mensaje: valido ? '' : 'El RUN no es válido. Verifica el dígito verificador.'
+    };
   },
 
   validarEmail(email) {
@@ -23,13 +61,18 @@ export const registroValidaciones = {
   },
 
   validarFono(fono) {
-    // Mínimo 8 dígitos, puede tener +56
-    const fonoRegex = /^[\+]?[0-9\s\-\(\)]{8,}$/;
+    // Si está vacío, es válido (opcional)
+    if (!fono || fono.trim() === '') {
+      return true;
+    }
+    // Si tiene valor, debe ser exactamente 9 dígitos y comenzar con 9
+    const fonoRegex = /^9[0-9]{8}$/;
     return fonoRegex.test(fono);
   },
 
   validarPassword(password) {
-    return password.length >= 6;
+    // La contraseña debe tener entre 4 y 10 caracteres
+    return password.length >= 4 && password.length <= 10;
   },
 
   validarConfirmarPassword(password, confirmarPassword) {
@@ -48,10 +91,6 @@ export const registroValidaciones = {
     return edad;
   },
 
-  validarTerminos(aceptado) {
-    return aceptado;
-  },
-
   // Validación completa del formulario
   validarFormularioCompleto(formData) {
     const errores = {};
@@ -66,9 +105,10 @@ export const registroValidaciones = {
       errores.apellido = 'El apellido debe tener al menos 3 caracteres y solo letras';
     }
 
-    // Validar RUN
-    if (!this.validarRUN(formData.run)) {
-      errores.run = 'El RUN debe tener formato 12345678-9';
+    // Validar RUN con dígito verificador
+    const validacionRUN = this.validarRUN(formData.run);
+    if (!validacionRUN.valido) {
+      errores.run = validacionRUN.mensaje;
     }
 
     // Validar email
@@ -77,9 +117,9 @@ export const registroValidaciones = {
       errores.email = 'Ingrese un email válido';
     }
 
-    // Validar fono
-    if (!this.validarFono(formData.fono)) {
-      errores.fono = 'Ingrese un teléfono válido';
+    // Validar fono (solo si tiene valor)
+    if (formData.fono && !this.validarFono(formData.fono)) {
+      errores.fono = 'El teléfono debe tener 9 dígitos y comenzar con 9';
     }
 
     // Validar dirección
@@ -97,9 +137,9 @@ export const registroValidaciones = {
       errores.region = 'Seleccione una región';
     }
 
-    // Validar password
+    // Validar password (4-10 caracteres)
     if (!this.validarPassword(formData.password)) {
-      errores.password = 'La contraseña debe tener al menos 6 caracteres';
+      errores.password = 'La contraseña debe tener entre 4 y 10 caracteres';
     }
 
     // Validar confirmación de password
@@ -115,11 +155,6 @@ export const registroValidaciones = {
       }
     } else {
       errores.fechaNacimiento = 'La fecha de nacimiento es requerida';
-    }
-
-    // Validar términos
-    if (!this.validarTerminos(formData.aceptoTerminos)) {
-      errores.aceptoTerminos = 'Debes aceptar los términos y condiciones';
     }
 
     return {

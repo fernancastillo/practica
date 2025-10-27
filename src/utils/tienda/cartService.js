@@ -26,6 +26,31 @@ export const cartService = {
     }
   },
 
+  // ✅ CALCULAR ENVÍO
+  calculateShipping: (subtotal) => {
+    // Envío gratis sobre $30.000, costo de $3.990 si es menor o igual
+    return subtotal > 30000 ? 0 : 3990;
+  },
+
+  // ✅ VERIFICAR DESCUENTO DUOC
+  hasDuocDiscount: (user) => {
+    if (!user || !user.email) return false;
+    
+    const email = user.email.toLowerCase();
+    return email.endsWith('@duoc.cl') || email.endsWith('@duocuc.cl');
+  },
+
+  // ✅ CALCULAR DESCUENTO DUOC
+  calculateDuocDiscount: (subtotal) => {
+    // 20% de descuento para estudiantes DUOC
+    return Math.round(subtotal * 0.2);
+  },
+
+  // ✅ CALCULAR TOTAL FINAL
+  calculateFinalTotal: (subtotal, envio, descuento = 0) => {
+    return Math.max(0, subtotal - descuento + envio);
+  },
+
   // ✅ VERIFICAR STOCK DISPONIBLE
   checkAvailableStock: (productoCodigo, cantidadDeseada) => {
     try {
@@ -103,7 +128,7 @@ export const cartService = {
     }
   },
 
-  // ✅ CALCULAR TOTAL
+  // ✅ CALCULAR TOTAL (solo productos)
   calculateTotal: (cartItems = null) => {
     const items = cartItems || cartService.getCart();
     return items.reduce((total, item) => total + (item.precio * item.cantidad), 0);
@@ -122,7 +147,7 @@ export const cartService = {
   },
 
   // ✅ PROCESAR CHECKOUT
-  processCheckout: (cartItems) => {
+  processCheckout: (cartItems, totalFinal) => {
     try {
       // Actualizar stock real en productos
       const productos = JSON.parse(localStorage.getItem(PRODUCTOS_KEY)) || [];
@@ -138,6 +163,10 @@ export const cartService = {
       });
       
       localStorage.setItem(PRODUCTOS_KEY, JSON.stringify(productosActualizados));
+      
+      // Aquí podrías guardar la orden con el total final
+      console.log('✅ Checkout procesado. Total final:', totalFinal);
+      
       return productosActualizados;
     } catch (error) {
       console.error('Error en checkout:', error);

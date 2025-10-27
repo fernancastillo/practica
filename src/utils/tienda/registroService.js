@@ -1,19 +1,23 @@
-import { saveLocalstorage, loadFromLocalstorage } from '../localstorageHelper';
-
-const USERS_KEY = 'junimo_usuarios';
+// src/utils/tienda/registroService.js
+import { dataService } from '../dataService';
 
 export const registroService = {
   registrarUsuario: (usuarioData) => {
     try {
-      // Obtener usuarios existentes
-      const usuariosExistentes = loadFromLocalstorage(USERS_KEY) || [];
+      console.log('🔍 Iniciando registro de usuario...');
+      console.log('📦 Datos recibidos:', usuarioData);
       
+      // Obtener usuarios existentes usando dataService
+      const usuariosExistentes = dataService.getUsuarios();
+      console.log('👥 Usuarios existentes:', usuariosExistentes.length);
+
       // Verificar si el email ya existe
       const emailExiste = usuariosExistentes.some(usuario => 
-        usuario.email === usuarioData.email
+        usuario.correo === usuarioData.email
       );
       
       if (emailExiste) {
+        console.log('❌ Email ya existe:', usuarioData.email);
         return {
           success: false,
           error: 'Este email ya está registrado'
@@ -26,74 +30,74 @@ export const registroService = {
       );
       
       if (runExiste) {
+        console.log('❌ RUN ya existe:', usuarioData.run);
         return {
           success: false,
           error: 'Este RUN ya está registrado'
         };
       }
 
-      // Aplicar descuento si es email Duoc
-      const esDuoc = usuarioData.email.endsWith('@duoc.cl') || usuarioData.email.endsWith('@duocuc.cl');
+      // Obtener nombre de la región
+      const regionSeleccionada = usuarioData.regionNombre || 'Región no especificada';
       
-      // Crear nuevo usuario con todos los campos
+      // Crear nuevo usuario con la estructura EXACTA del JSON (sin campos adicionales)
       const nuevoUsuario = {
-        id: Date.now(),
         run: usuarioData.run,
         nombre: usuarioData.nombre,
-        apellido: usuarioData.apellido,
-        email: usuarioData.email,
-        fono: usuarioData.fono,
-        direccion: usuarioData.direccion,
-        comuna: usuarioData.comuna,
-        region: usuarioData.region,
-        fechaNacimiento: usuarioData.fechaNacimiento,
-        contrasenha: usuarioData.password,
+        apellidos: `${usuarioData.apellido}`,
+        correo: usuarioData.email,
+        // NO incluir contraseña en el localStorage por seguridad
+        telefono: usuarioData.fono ? parseInt(usuarioData.fono) : null,
+        fecha_nacimiento: usuarioData.fechaNacimiento,
         tipo: 'Cliente',
-        descuento: esDuoc ? '15%' : '0%',
-        esDuoc: esDuoc,
-        fechaRegistro: new Date().toISOString(),
-        activo: true
+        region: regionSeleccionada, // Usar el nombre de la región
+        comuna: usuarioData.comuna,
+        direccion: usuarioData.direccion
+        // Eliminados: activo, descuento, esDuoc, fechaRegistro
       };
 
-      // Guardar usuario
-      usuariosExistentes.push(nuevoUsuario);
-      saveLocalstorage(USERS_KEY, usuariosExistentes);
+      console.log('👤 Nuevo usuario a guardar:', nuevoUsuario);
 
-      console.log('Usuario registrado exitosamente:', nuevoUsuario);
+      // Guardar usuario usando dataService
+      const usuarioGuardado = dataService.addUsuario(nuevoUsuario);
+      console.log('✅ Usuario guardado exitosamente:', usuarioGuardado);
+
+      // Verificar que realmente se guardó
+      const usuariosActualizados = dataService.getUsuarios();
+      console.log('📊 Total de usuarios después del registro:', usuariosActualizados.length);
       
       return {
         success: true,
         user: nuevoUsuario,
-        message: esDuoc ? 
-          '¡Registro exitoso! Obtienes 15% de descuento por ser estudiante Duoc.' : 
-          '¡Registro exitoso! Bienvenido a Junimo Store.'
+        message: '¡Registro exitoso! Bienvenido a Junimo Store.'
       };
 
     } catch (error) {
-      console.error('Error en registro:', error);
+      console.error('❌ Error detallado en registro:', error);
+      console.error('📊 Stack trace:', error.stack);
       return {
         success: false,
-        error: 'Error al registrar usuario'
+        error: error.message || 'Error al registrar usuario. Verifica la consola para más detalles.'
       };
     }
   },
 
   verificarEmailExistente: (email) => {
-    const usuariosExistentes = loadFromLocalstorage(USERS_KEY) || [];
-    return usuariosExistentes.some(usuario => usuario.email === email);
+    const usuariosExistentes = dataService.getUsuarios();
+    return usuariosExistentes.some(usuario => usuario.correo === email);
   },
 
   verificarRUNExistente: (run) => {
-    const usuariosExistentes = loadFromLocalstorage(USERS_KEY) || [];
+    const usuariosExistentes = dataService.getUsuarios();
     return usuariosExistentes.some(usuario => usuario.run === run);
   },
 
   obtenerUsuarios: () => {
-    return loadFromLocalstorage(USERS_KEY) || [];
+    return dataService.getUsuarios();
   },
 
   obtenerUsuarioPorEmail: (email) => {
-    const usuariosExistentes = loadFromLocalstorage(USERS_KEY) || [];
-    return usuariosExistentes.find(usuario => usuario.email === email);
+    const usuariosExistentes = dataService.getUsuarios();
+    return usuariosExistentes.find(usuario => usuario.correo === email);
   }
 };
