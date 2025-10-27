@@ -1,12 +1,12 @@
 // src/pages/tienda/Carrito.jsx
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Alert, Button, Card } from 'react-bootstrap';
+import { Container, Row, Col, Alert, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../../utils/tienda/authService';
+import { cartService } from '../../utils/tienda/cartService';
 import CartItem from '../../components/tienda/cart/CartItem';
 import CartSummary from '../../components/tienda/cart/CartSummary';
 import EmptyCart from '../../components/tienda/cart/EmptyCart';
-import './Cart.css';
 
 const Carrito = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -14,52 +14,16 @@ const Carrito = () => {
   const [showAlert, setShowAlert] = useState(false);
   const navigate = useNavigate();
 
-  // Función para verificar stock disponible
-  const verificarStockDisponible = (productoCodigo, cantidadDeseada) => {
-    try {
-      const productos = JSON.parse(localStorage.getItem('app_productos')) || [];
-      const producto = productos.find(p => p.codigo === productoCodigo);
-      
-      if (!producto) return false;
-      
-      // Verificar que la cantidad deseada no supere el stock real
-      return cantidadDeseada <= producto.stock;
-    } catch (error) {
-      console.error('Error al verificar stock:', error);
-      return false;
-    }
-  };
-
-  // Función para actualizar productos con stock reservado
-  const actualizarProductosConStockReservado = (carritoActual) => {
-    try {
-      const productos = JSON.parse(localStorage.getItem('app_productos')) || [];
-      
-      const productosActualizados = productos.map(producto => {
-        const itemEnCarrito = carritoActual.find(item => item.codigo === producto.codigo);
-        return {
-          ...producto,
-          stock_reservado: itemEnCarrito ? itemEnCarrito.cantidad : 0
-        };
-      });
-      
-      localStorage.setItem('app_productos', JSON.stringify(productosActualizados));
-    } catch (error) {
-      console.error('Error al actualizar stock reservado:', error);
-    }
-  };
-
   // Cargar carrito desde localStorage
   const loadCart = () => {
     try {
-      const cartJSON = localStorage.getItem('junimoCart');
+      const items = cartService.getCart();
       console.log('🔄 Cargando carrito desde localStorage');
       
-      if (cartJSON) {
-        const items = JSON.parse(cartJSON);
+      if (items && items.length > 0) {
         console.log('📦 Productos en carrito:', items);
         setCartItems(items);
-        actualizarProductosConStockReservado(items);
+        cartService.updateReservedStock(items);
       } else {
         console.log('🛒 Carrito vacío');
         setCartItems([]);
@@ -90,24 +54,15 @@ const Carrito = () => {
   // Actualizar cantidad
   const handleUpdateQuantity = (productCode, newQuantity) => {
     try {
-      // Verificar stock disponible
-      if (!verificarStockDisponible(productCode, newQuantity)) {
+      if (!cartService.checkAvailableStock(productCode, newQuantity)) {
         alert('❌ No hay suficiente stock disponible');
         return;
       }
 
-      const updatedCart = cartItems.map(item =>
-        item.codigo === productCode
-          ? { ...item, cantidad: Math.max(0, newQuantity) }
-          : item
-      ).filter(item => item.cantidad > 0);
-
-      localStorage.setItem('junimoCart', JSON.stringify(updatedCart));
+      const updatedCart = cartService.updateQuantity(productCode, newQuantity);
       setCartItems(updatedCart);
       window.dispatchEvent(new Event('cartUpdated'));
       
-      // Actualizar productos en localStorage para reflejar stock reservado
-      actualizarProductosConStockReservado(updatedCart);
     } catch (error) {
       console.error('Error al actualizar cantidad:', error);
     }
@@ -116,19 +71,12 @@ const Carrito = () => {
   // Eliminar producto
   const handleRemoveItem = (productCode) => {
     try {
-      const updatedCart = cartItems.filter(item => item.codigo !== productCode);
-      localStorage.setItem('junimoCart', JSON.stringify(updatedCart));
+      const updatedCart = cartService.removeItem(productCode);
       setCartItems(updatedCart);
       window.dispatchEvent(new Event('cartUpdated'));
-      actualizarProductosConStockReservado(updatedCart);
     } catch (error) {
       console.error('Error al eliminar producto:', error);
     }
-  };
-
-  // Calcular total
-  const calculateTotal = () => {
-    return cartItems.reduce((total, item) => total + (item.precio * item.cantidad), 0);
   };
 
   // Finalizar compra
@@ -138,28 +86,14 @@ const Carrito = () => {
       return;
     }
 
-    const total = calculateTotal();
-    
     try {
-      console.log('✅ Compra realizada. Total:', total);
+      console.log('✅ Compra realizada. Total:', cartService.calculateTotal(cartItems));
       
-      // Actualizar stock real en productos
-      const productos = JSON.parse(localStorage.getItem('app_productos')) || [];
-      const productosActualizados = productos.map(producto => {
-        const itemEnCarrito = cartItems.find(item => item.codigo === producto.codigo);
-        if (itemEnCarrito) {
-          return {
-            ...producto,
-            stock: Math.max(0, producto.stock - itemEnCarrito.cantidad)
-          };
-        }
-        return producto;
-      });
-      
-      localStorage.setItem('app_productos', JSON.stringify(productosActualizados));
+      // Procesar checkout
+      cartService.processCheckout(cartItems);
       
       // Vaciar carrito
-      localStorage.removeItem('junimoCart');
+      cartService.clearCart();
       setCartItems([]);
       window.dispatchEvent(new Event('cartUpdated'));
       
@@ -174,32 +108,78 @@ const Carrito = () => {
     }
   };
 
-  const total = calculateTotal();
+  const total = cartService.calculateTotal(cartItems);
 
   if (cartItems.length === 0) {
     return (
-      <div className="cart-page">
-        <div className="navbar-spacer"></div>
+      <div 
+        className="min-vh-100 w-100"
+        style={{
+          backgroundImage: 'url("https://images3.alphacoders.com/126/1269904.png")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          fontFamily: "'Lato', sans-serif"
+        }}
+      >
+        <div style={{ height: '80px' }}></div>
         <EmptyCart />
       </div>
     );
   }
 
   return (
-    <div className="cart-page">
-      <div className="navbar-spacer"></div>
+    <div 
+      className="min-vh-100 w-100"
+      style={{
+        backgroundImage: 'url("https://images3.alphacoders.com/126/1269904.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        fontFamily: "'Lato', sans-serif"
+      }}
+    >
+      <div style={{ height: '80px' }}></div>
       
       <Container className="py-4">
         {showAlert && (
-          <Alert variant="success" className="text-center">
+          <Alert 
+            variant="success" 
+            className="text-center rounded-4 border-3 border-dark shadow"
+            style={{
+              backgroundColor: '#87CEEB',
+              color: '#000000',
+              fontWeight: '600',
+              fontFamily: "'Lato', sans-serif"
+            }}
+          >
             ✅ ¡Compra realizada con éxito! Redirigiendo a tus pedidos...
           </Alert>
         )}
         
         <Row className="mb-4">
           <Col>
-            <h1 className="page-title">🛒 Mi Carrito de Compras</h1>
-            <p className="text-muted">
+            <h1 
+              className="text-center mb-3"
+              style={{
+                fontFamily: "'Indie Flower', cursive",
+                color: '#000000',
+                fontWeight: 'bold',
+                fontSize: '2.5rem',
+                textShadow: '2px 2px 4px rgba(255, 255, 255, 0.8)'
+              }}
+            >
+              🛒 Mi Carrito de Compras
+            </h1>
+            <p 
+              className="text-center fs-5"
+              style={{
+                color: '#000000',
+                fontWeight: '500',
+                textShadow: '1px 1px 2px rgba(255, 255, 255, 0.7)',
+                fontFamily: "'Lato', sans-serif"
+              }}
+            >
               Revisa y modifica los productos en tu carrito
             </p>
           </Col>
@@ -207,7 +187,13 @@ const Carrito = () => {
 
         <Row>
           <Col lg={8}>
-            <div className="cart-items-section">
+            <div 
+              className="rounded-4 p-4 shadow-lg border-3 border-dark"
+              style={{
+                backgroundColor: '#87CEEB',
+                fontFamily: "'Lato', sans-serif"
+              }}
+            >
               {/* Items del carrito */}
               {cartItems.map(item => (
                 <CartItem 
@@ -222,16 +208,55 @@ const Carrito = () => {
               <Row className="mt-4">
                 <Col>
                   <div className="d-flex justify-content-between">
-                    <Button as={Link} to="/productos" variant="outline-primary">
+                    <Button 
+                      as={Link} 
+                      to="/productos" 
+                      variant="outline-dark" 
+                      className="rounded-pill px-4 py-2 fw-bold border-3"
+                      style={{
+                        backgroundColor: '#dedd8ff5',
+                        color: '#000000',
+                        transition: 'all 0.3s ease',
+                        fontFamily: "'Lato', sans-serif"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 6px 20px rgba(222, 221, 143, 0.6)';
+                        e.target.style.backgroundColor = '#FFD700';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = 'none';
+                        e.target.style.backgroundColor = '#dedd8ff5';
+                      }}
+                    >
                       ← Seguir Comprando
                     </Button>
                     
                     <Button 
                       variant="outline-danger" 
+                      className="rounded-pill px-4 py-2 fw-bold border-3"
+                      style={{
+                        backgroundColor: '#dedd8ff5',
+                        color: '#000000',
+                        borderColor: '#dc3545',
+                        transition: 'all 0.3s ease',
+                        fontFamily: "'Lato', sans-serif"
+                      }}
                       onClick={() => {
-                        localStorage.removeItem('junimoCart');
+                        cartService.clearCart();
                         setCartItems([]);
                         window.dispatchEvent(new Event('cartUpdated'));
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 6px 20px rgba(220, 53, 69, 0.4)';
+                        e.target.style.backgroundColor = '#FFD700';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.transform = 'translateY(0)';
+                        e.target.style.boxShadow = 'none';
+                        e.target.style.backgroundColor = '#dedd8ff5';
                       }}
                     >
                       🗑️ Vaciar Carrito
