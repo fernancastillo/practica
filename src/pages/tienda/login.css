@@ -1,0 +1,223 @@
+/* Fondo estilo Stardew Valley */
+.login-page {
+    min-height: 100vh;
+    background-image: url('../../assets/tienda/fondostardew.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    width: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Overlay para mejor contraste */
+.login-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 0;
+}
+
+/* Espacio para el navbar fixed */
+.login-navbar-spacer {
+    height: 120px;
+}
+
+/* Contenedor principal del login */
+.login-container {
+    position: relative;
+    z-index: 1;
+    margin-top: 2rem;
+}
+
+/* Card del login con estilo Junimo */
+.login-card {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(135, 206, 235, 0.3);
+}
+
+/* Header de la card */
+.login-card .card-header {
+    background: linear-gradient(135deg, #2E8B57, #3CB371);
+    border-bottom: none;
+    padding: 1.5rem;
+}
+
+.login-card .card-title {
+    color: white;
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin: 0;
+    text-align: center;
+}
+
+/* Body de la card */
+.login-card .card-body {
+    padding: 2rem;
+}
+
+/* Estilos para los inputs */
+.login-form .form-label {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.login-form .form-control {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.login-form .form-control:focus {
+    border-color: #87CEEB;
+    box-shadow: 0 0 0 0.2rem rgba(135, 206, 235, 0.4);
+    background: white;
+}
+
+.login-form .form-control::placeholder {
+    color: #6c757d;
+}
+
+/* Botón de login */
+.login-btn {
+    background: linear-gradient(135deg, #2E8B57, #3CB371);
+    border: none;
+    border-radius: 10px;
+    padding: 0.75rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.login-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3CB371, #2E8B57);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(46, 139, 87, 0.4);
+}
+
+.login-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Spinner personalizado */
+.login-spinner {
+    width: 1rem;
+    height: 1rem;
+    border-width: 2px;
+    color: white;
+}
+
+/* Alertas */
+.login-alert {
+    border-radius: 10px;
+    border: none;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.alert-danger {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border-left: 4px solid #dc3545;
+}
+
+/* Separador */
+.login-divider {
+    border-color: rgba(0, 0, 0, 0.1);
+    margin: 1.5rem 0;
+}
+
+/* Botón de registro */
+.register-btn {
+    border-radius: 10px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 2px solid #2E8B57;
+    color: #2E8B57;
+    background: transparent;
+}
+
+.register-btn:hover {
+    background: #2E8B57;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Texto del registro */
+.register-text {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+/* Efectos hover para todos los botones */
+.btn-hover-effect {
+    transition: all 0.3s ease !important;
+}
+
+.btn-hover-effect:hover {
+    background-color: #87CEEB !important;
+    color: #000000 !important;
+    border-color: #87CEEB !important;
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .login-container {
+        margin-top: 1rem;
+    }
+    
+    .login-card .card-body {
+        padding: 1.5rem;
+    }
+    
+    .login-navbar-spacer {
+        height: 100px;
+    }
+}
+
+/* Animación de entrada */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+/* Estilo para los iconos si decides agregarlos */
+.login-icon {
+    color: #2E8B57;
+    margin-right: 0.5rem;
+}
+
+/* Placeholder styling para inputs vacíos */
+.form-control:placeholder-shown {
+    background: rgba(248, 249, 250, 0.8);
+}

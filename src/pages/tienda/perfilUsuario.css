@@ -1,0 +1,107 @@
+.perfil-page {
+  min-height: 100vh;
+  background-image: url('https://images3.alphacoders.com/126/1269904.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+.navbar-spacer {
+  height: 120px;
+}
+
+.page-title {
+  color: white;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.page-subtitle {
+  color: rgba(255,255,255,0.9);
+  font-size: 1.1rem;
+}
+
+.profile-tabs .nav-link {
+  color: white !important;
+  border: none !important;
+  background: rgba(255,255,255,0.1) !important;
+  margin: 0 5px;
+  border-radius: 10px 10px 0 0 !important;
+}
+
+.profile-tabs .nav-link.active {
+  background: rgba(255,255,255,0.9) !important;
+  color: #2c3e50 !important;
+  font-weight: 600;
+}
+
+.profile-card {
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  border: none;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.profile-input {
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.profile-input:focus {
+  border-color: #87CEEB;
+  box-shadow: 0 0 0 0.2rem rgba(135, 206, 235, 0.25);
+}
+
+.save-btn {
+  border-radius: 10px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.save-btn:hover {
+  transform: translateY(-2px);
+}
+
+.section-title {
+  color: #2c3e50;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+.preference-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.preference-switch .form-check-input:checked {
+  background-color: #87CEEB;
+  border-color: #87CEEB;
+}
+
+.loading-perfil,
+.no-user {
+  color: white;
+  text-align: center;
+}
+
+.loading-icon,
+.no-user-icon {
+  font-size: 4rem;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .profile-tabs .nav-link {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .page-title {
+    font-size: 1.8rem;
+  }
+}

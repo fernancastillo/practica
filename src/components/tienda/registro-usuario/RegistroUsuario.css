@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Indie+Flower&family=Lato:wght@300;400;700&display=swap');
+
+.registro-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, rgba(46, 139, 87, 0.9) 0%, rgba(67, 160, 71, 0.9) 100%), 
+              url('https://images3.alphacoders.com/126/1269904.png');
+  background-size: cover;
+  background-attachment: fixed;
+  padding: 2rem 0;
+  font-family: 'Lato', sans-serif;
+}
+
+.registro-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 15px;
+  border: 3px solid #dedd8f;
+  backdrop-filter: blur(10px);
+}
+
+.registro-titulo {
+  font-family: 'Indie Flower', cursive;
+  font-size: 2.5rem;
+  color: #2E8B57;
+  margin-bottom: 0.5rem;
+}
+
+.registro-subtitulo {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.registro-btn {
+  background: linear-gradient(135deg, #2E8B57, #3CB371);
+  border: none;
+  padding: 12px;
+  font-weight: bold;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+}
+
+.registro-btn:hover {
+  background: linear-gradient(135deg, #236b47, #2E8B57);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(46, 139, 87, 0.3);
+}
+
+.terminos-link {
+  color: #2E8B57;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.terminos-link:hover {
+  color: #236b47;
+  text-decoration: underline;
+}
+
+.login-link {
+  color: #666;
+  margin-bottom: 0;
+}
+
+.login-link-text {
+  color: #2E8B57;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.login-link-text:hover {
+  color: #236b47;
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .registro-card .card-body {
+    padding: 2rem !important;
+  }
+  
+  .registro-titulo {
+    font-size: 2rem;
+  }
+}

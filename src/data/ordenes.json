@@ -1,0 +1,173 @@
+[
+  {
+    "numeroOrden": "SO1001",
+    "fecha": "03/10/2025",
+    "run": "20694795",
+    "estadoEnvio": "Entregado",
+    "total": 44980,
+    "productos": [
+      {"codigo": "PE001", "nombre": "Peluche De Krobus", "cantidad": 1, "precio": 19990},
+      {"codigo": "AC002", "nombre": "Taza Stardew Valley", "cantidad": 2, "precio": 7990},
+      {"codigo": "AC003", "nombre": "Pins Stardew Valley", "cantidad": 3, "precio": 2500}
+    ]
+  },
+  {
+    "numeroOrden": "SO1002",
+    "fecha": "22/10/2025",
+    "run": "20694795",
+    "estadoEnvio": "Pendiente",
+    "total": 31980,
+    "productos": [
+      {"codigo": "PP001", "nombre": "Polera Stardew Valley Personalizada", "cantidad": 1, "precio": 11990},
+      {"codigo": "GU001", "nombre": "Guía Ilustrada De Cultivos", "cantidad": 1, "precio": 24990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1003",
+    "fecha": "21/10/2025",
+    "run": "22027243",
+    "estadoEnvio": "Enviado",
+    "total": 54970,
+    "productos": [
+      {"codigo": "JM001", "nombre": "Stardew Valley Juego De Mesa", "cantidad": 1, "precio": 29990},
+      {"codigo": "DE001", "nombre": "Póster Stardew Valley", "cantidad": 1, "precio": 14990},
+      {"codigo": "MD001", "nombre": "Pack De Texturas HD", "cantidad": 1, "precio": 9990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1004",
+    "fecha": "12/10/2025",
+    "run": "22027243",
+    "estadoEnvio": "Entregado",
+    "total": 24990,
+    "productos": [
+      {"codigo": "GU001", "nombre": "Guía Ilustrada De Cultivos", "cantidad": 1, "precio": 24990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1005",
+    "fecha": "08/10/2025",
+    "run": "19902280",
+    "estadoEnvio": "Cancelado",
+    "total": 52470,
+    "productos": [
+      {"codigo": "DE002", "nombre": "Almohada Pollo De Stardew Valley", "cantidad": 2, "precio": 15990},
+      {"codigo": "AC001", "nombre": "Llavero Stardew Valley", "cantidad": 1, "precio": 5990},
+      {"codigo": "AC003", "nombre": "Pins Stardew Valley", "cantidad": 5, "precio": 2500}
+    ]
+  },
+  {
+    "numeroOrden": "SO1006",
+    "fecha": "18/10/2025",
+    "run": "19902280",
+    "estadoEnvio": "Pendiente",
+    "total": 17980,
+    "productos": [
+      {"codigo": "AC001", "nombre": "Llavero Stardew Valley", "cantidad": 2, "precio": 5990},
+      {"codigo": "AC002", "nombre": "Taza Stardew Valley", "cantidad": 1, "precio": 7990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1007",
+    "fecha": "15/10/2025",
+    "run": "21547896",
+    "estadoEnvio": "Entregado",
+    "total": 74970,
+    "productos": [
+      {"codigo": "PE001", "nombre": "Peluche De Krobus", "cantidad": 1, "precio": 19990},
+      {"codigo": "JM001", "nombre": "Stardew Valley Juego De Mesa", "cantidad": 1, "precio": 29990},
+      {"codigo": "DE001", "nombre": "Póster Stardew Valley", "cantidad": 1, "precio": 14990},
+      {"codigo": "AC003", "nombre": "Pins Stardew Valley", "cantidad": 4, "precio": 2500}
+    ]
+  },
+  {
+    "numeroOrden": "SO1008",
+    "fecha": "25/10/2025",
+    "run": "21547896",
+    "estadoEnvio": "Enviado",
+    "total": 34980,
+    "productos": [
+      {"codigo": "PP001", "nombre": "Polera Stardew Valley Personalizada", "cantidad": 2, "precio": 11990},
+      {"codigo": "AC001", "nombre": "Llavero Stardew Valley", "cantidad": 2, "precio": 5990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1009",
+    "fecha": "10/10/2025",
+    "run": "19874563",
+    "estadoEnvio": "Entregado",
+    "total": 29990,
+    "productos": [
+      {"codigo": "JM001", "nombre": "Stardew Valley Juego De Mesa", "cantidad": 1, "precio": 29990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1010",
+    "fecha": "28/10/2025",
+    "run": "19874563",
+    "estadoEnvio": "Pendiente",
+    "total": 67470,
+    "productos": [
+      {"codigo": "PE001", "nombre": "Peluche De Krobus", "cantidad": 2, "precio": 19990},
+      {"codigo": "DE002", "nombre": "Almohada Pollo De Stardew Valley", "cantidad": 1, "precio": 15990},
+      {"codigo": "GU001", "nombre": "Guía Ilustrada De Cultivos", "cantidad": 1, "precio": 24990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1011",
+    "fecha": "14/10/2025",
+    "run": "22589634",
+    "estadoEnvio": "Enviado",
+    "total": 44970,
+    "productos": [
+      {"codigo": "DE001", "nombre": "Póster Stardew Valley", "cantidad": 1, "precio": 14990},
+      {"codigo": "DE002", "nombre": "Almohada Pollo De Stardew Valley", "cantidad": 1, "precio": 15990},
+      {"codigo": "PP001", "nombre": "Polera Stardew Valley Personalizada", "cantidad": 1, "precio": 11990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1012",
+    "fecha": "05/10/2025",
+    "run": "18745963",
+    "estadoEnvio": "Entregado",
+    "total": 51980,
+    "productos": [
+      {"codigo": "GU001", "nombre": "Guía Ilustrada De Cultivos", "cantidad": 1, "precio": 24990},
+      {"codigo": "JM001", "nombre": "Stardew Valley Juego De Mesa", "cantidad": 1, "precio": 29990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1013",
+    "fecha": "20/10/2025",
+    "run": "18745963",
+    "estadoEnvio": "Pendiente",
+    "total": 24990,
+    "productos": [
+      {"codigo": "DE002", "nombre": "Almohada Pollo De Stardew Valley", "cantidad": 1, "precio": 15990},
+      {"codigo": "AC002", "nombre": "Taza Stardew Valley", "cantidad": 1, "precio": 7990}
+    ]
+  },
+  {
+    "numeroOrden": "SO1014",
+    "fecha": "17/10/2025",
+    "run": "21025874",
+    "estadoEnvio": "Enviado",
+    "total": 37480,
+    "productos": [
+      {"codigo": "PP001", "nombre": "Polera Stardew Valley Personalizada", "cantidad": 2, "precio": 11990},
+      {"codigo": "AC003", "nombre": "Pins Stardew Valley", "cantidad": 5, "precio": 2500}
+    ]
+  },
+  {
+    "numeroOrden": "SO1015",
+    "fecha": "30/10/2025",
+    "run": "19587412",
+    "estadoEnvio": "Pendiente",
+    "total": 59970,
+    "productos": [
+      {"codigo": "PE001", "nombre": "Peluche De Krobus", "cantidad": 1, "precio": 19990},
+      {"codigo": "JM001", "nombre": "Stardew Valley Juego De Mesa", "cantidad": 1, "precio": 29990},
+      {"codigo": "MD001", "nombre": "Pack De Texturas HD", "cantidad": 1, "precio": 9990}
+    ]
+  }
+]
