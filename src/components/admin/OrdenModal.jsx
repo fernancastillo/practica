@@ -1,4 +1,3 @@
-// src/components/admin/OrdenModal.jsx
 import { useState } from 'react';
 import { formatCurrency, formatDate, getEstadoBadge } from '../../utils/admin/dashboardUtils';
 import { generarBoletaOrden, generarBoletaCSV, generarBoletaTexto } from '../../utils/admin/boletaUtils';

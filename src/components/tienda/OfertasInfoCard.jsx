@@ -1,4 +1,3 @@
-// src/components/tienda/ofertas/OfertasInfoCard.jsx
 import React from 'react';
 import { Row, Col, Card, Alert, Button } from 'react-bootstrap';
 

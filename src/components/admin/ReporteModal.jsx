@@ -1,4 +1,3 @@
-// src/components/admin/ReporteModal.jsx
 import { formatCurrency } from '../../utils/admin/dashboardUtils';
 
 const ReporteModal = ({

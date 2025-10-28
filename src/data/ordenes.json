@@ -2,7 +2,7 @@
   {
     "numeroOrden": "SO1001",
     "fecha": "03/10/2025",
-    "run": "20694795",
+    "run": "206947953",
     "estadoEnvio": "Entregado",
     "total": 44980,
     "productos": [
@@ -14,7 +14,7 @@
   {
     "numeroOrden": "SO1002",
     "fecha": "22/10/2025",
-    "run": "20694795",
+    "run": "206947953",
     "estadoEnvio": "Pendiente",
     "total": 31980,
     "productos": [
@@ -25,7 +25,7 @@
   {
     "numeroOrden": "SO1003",
     "fecha": "21/10/2025",
-    "run": "22027243",
+    "run": "220272430",
     "estadoEnvio": "Enviado",
     "total": 54970,
     "productos": [
@@ -37,7 +37,7 @@
   {
     "numeroOrden": "SO1004",
     "fecha": "12/10/2025",
-    "run": "22027243",
+    "run": "220272430",
     "estadoEnvio": "Entregado",
     "total": 24990,
     "productos": [
@@ -47,7 +47,7 @@
   {
     "numeroOrden": "SO1005",
     "fecha": "08/10/2025",
-    "run": "19902280",
+    "run": "199022800",
     "estadoEnvio": "Cancelado",
     "total": 52470,
     "productos": [
@@ -59,7 +59,7 @@
   {
     "numeroOrden": "SO1006",
     "fecha": "18/10/2025",
-    "run": "19902280",
+    "run": "199022800",
     "estadoEnvio": "Pendiente",
     "total": 17980,
     "productos": [
@@ -70,7 +70,7 @@
   {
     "numeroOrden": "SO1007",
     "fecha": "15/10/2025",
-    "run": "21547896",
+    "run": "215478967",
     "estadoEnvio": "Entregado",
     "total": 74970,
     "productos": [
@@ -83,7 +83,7 @@
   {
     "numeroOrden": "SO1008",
     "fecha": "25/10/2025",
-    "run": "21547896",
+    "run": "215478967",
     "estadoEnvio": "Enviado",
     "total": 34980,
     "productos": [
@@ -94,7 +94,7 @@
   {
     "numeroOrden": "SO1009",
     "fecha": "10/10/2025",
-    "run": "19874563",
+    "run": "198745633",
     "estadoEnvio": "Entregado",
     "total": 29990,
     "productos": [
@@ -104,7 +104,7 @@
   {
     "numeroOrden": "SO1010",
     "fecha": "28/10/2025",
-    "run": "19874563",
+    "run": "198745633",
     "estadoEnvio": "Pendiente",
     "total": 67470,
     "productos": [
@@ -116,7 +116,7 @@
   {
     "numeroOrden": "SO1011",
     "fecha": "14/10/2025",
-    "run": "22589634",
+    "run": "225896341",
     "estadoEnvio": "Enviado",
     "total": 44970,
     "productos": [
@@ -128,7 +128,7 @@
   {
     "numeroOrden": "SO1012",
     "fecha": "05/10/2025",
-    "run": "18745963",
+    "run": "187459632",
     "estadoEnvio": "Entregado",
     "total": 51980,
     "productos": [
@@ -139,7 +139,7 @@
   {
     "numeroOrden": "SO1013",
     "fecha": "20/10/2025",
-    "run": "18745963",
+    "run": "187459632",
     "estadoEnvio": "Pendiente",
     "total": 24990,
     "productos": [
@@ -150,7 +150,7 @@
   {
     "numeroOrden": "SO1014",
     "fecha": "17/10/2025",
-    "run": "21025874",
+    "run": "210258740",
     "estadoEnvio": "Enviado",
     "total": 37480,
     "productos": [
@@ -161,7 +161,7 @@
   {
     "numeroOrden": "SO1015",
     "fecha": "30/10/2025",
-    "run": "19587412",
+    "run": "195874126",
     "estadoEnvio": "Pendiente",
     "total": 59970,
     "productos": [

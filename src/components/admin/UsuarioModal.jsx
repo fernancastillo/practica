@@ -1,7 +1,7 @@
-// src/components/admin/UsuarioModal.jsx
 import { useState, useEffect } from 'react';
 import { formatCurrency, formatDate } from '../../utils/admin/dashboardUtils';
-import { dataService } from '../../utils/dataService'; // Importar el dataService
+import { dataService } from '../../utils/dataService';
+import regionesComunasData from '../../data/regiones_comunas.json';
 
 const UsuarioModal = ({ show, usuario, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
@@ -13,6 +13,9 @@ const UsuarioModal = ({ show, usuario, onClose, onUpdate }) => {
     comuna: '',
     region: ''
   });
+
+  const [errors, setErrors] = useState({});
+  const [comunasFiltradas, setComunasFiltradas] = useState([]);
 
   // Estado para el historial de compras
   const [historialCompras, setHistorialCompras] = useState([]);
@@ -29,6 +32,16 @@ const UsuarioModal = ({ show, usuario, onClose, onUpdate }) => {
         comuna: usuario.comuna || '',
         region: usuario.region || ''
       });
+
+      // Si hay región seleccionada, cargar sus comunas
+      if (usuario.region) {
+        const regionEncontrada = regionesComunasData.regiones.find(
+          r => r.nombre === usuario.region
+        );
+        if (regionEncontrada) {
+          setComunasFiltradas(regionEncontrada.comunas);
+        }
+      }
 
       // Cargar historial de compras si el usuario es cliente
       if (usuario.tipo === 'Cliente' && usuario.run) {
@@ -65,18 +78,179 @@ const UsuarioModal = ({ show, usuario, onClose, onUpdate }) => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onUpdate(usuario.run, formData);
-    onClose();
+  // Función para validar email con dominios específicos
+  const validarEmail = (email) => {
+    if (!email.trim()) return 'El email es requerido';
+    
+    const dominiosPermitidos = ['gmail.com', 'duoc.cl', 'profesor.duoc.cl'];
+    const regex = new RegExp(`^[a-zA-Z0-9._%+-]+@(${dominiosPermitidos.join('|')})$`);
+    
+    if (!regex.test(email)) {
+      return `El email debe ser de uno de estos dominios: ${dominiosPermitidos.join(', ')}`;
+    }
+    
+    return '';
+  };
+
+  // Función para validar teléfono (opcional)
+  const validarTelefono = (telefono) => {
+    if (!telefono || telefono.trim() === '') return ''; // Teléfono es opcional
+    
+    // Remover todos los caracteres que no sean números
+    const soloNumeros = telefono.replace(/\D/g, '');
+    
+    // Validar que tenga exactamente 9 dígitos y empiece con 9
+    if (soloNumeros.length !== 9) {
+      return 'El teléfono debe tener 9 dígitos';
+    }
+    
+    if (!soloNumeros.startsWith('9')) {
+      return 'El teléfono debe empezar con 9';
+    }
+    
+    return '';
+  };
+
+  // Función para validar nombre y apellidos
+  const validarNombre = (nombre) => {
+    if (!nombre.trim()) return 'El nombre es requerido';
+    if (nombre.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres';
+    return '';
+  };
+
+  const validarApellidos = (apellidos) => {
+    if (!apellidos.trim()) return 'Los apellidos son requeridos';
+    if (apellidos.trim().length < 3) return 'Los apellidos deben tener al menos 3 caracteres';
+    return '';
+  };
+
+  // Función para validar dirección (OBLIGATORIA)
+  const validarDireccion = (direccion) => {
+    if (!direccion.trim()) return 'La dirección es obligatoria';
+    
+    if (direccion.trim().length < 5) {
+      return 'La dirección debe tener al menos 5 caracteres';
+    }
+    
+    if (direccion.trim().length > 100) {
+      return 'La dirección no puede tener más de 100 caracteres';
+    }
+    
+    return '';
+  };
+
+  // Función para manejar cambio de región
+  const handleRegionChange = (e) => {
+    const regionSeleccionada = e.target.value;
+    
+    setFormData(prev => ({
+      ...prev,
+      region: regionSeleccionada,
+      comuna: '' // Resetear comuna cuando cambia la región
+    }));
+
+    // Filtrar comunas según la región seleccionada
+    if (regionSeleccionada) {
+      const regionEncontrada = regionesComunasData.regiones.find(
+        r => r.nombre === regionSeleccionada
+      );
+      if (regionEncontrada) {
+        setComunasFiltradas(regionEncontrada.comunas);
+      } else {
+        setComunasFiltradas([]);
+      }
+    } else {
+      setComunasFiltradas([]);
+    }
+
+    // Limpiar errores
+    if (errors.region) {
+      setErrors(prev => ({
+        ...prev,
+        region: ''
+      }));
+    }
+  };
+
+  // Función para manejar cambio de comuna
+  const handleComunaChange = (e) => {
+    const comunaSeleccionada = e.target.value;
+    
+    setFormData(prev => ({
+      ...prev,
+      comuna: comunaSeleccionada
+    }));
+
+    // Limpiar errores
+    if (errors.comuna) {
+      setErrors(prev => ({
+        ...prev,
+        comuna: ''
+      }));
+    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    // Limpiar error del campo
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Validar nombre
+    const errorNombre = validarNombre(formData.nombre);
+    if (errorNombre) newErrors.nombre = errorNombre;
+
+    // Validar apellidos
+    const errorApellidos = validarApellidos(formData.apellidos);
+    if (errorApellidos) newErrors.apellidos = errorApellidos;
+
+    // Validar email
+    const errorEmail = validarEmail(formData.correo);
+    if (errorEmail) newErrors.correo = errorEmail;
+
+    // Validar teléfono (solo si se ingresó)
+    if (formData.telefono && formData.telefono.trim() !== '') {
+      const errorTelefono = validarTelefono(formData.telefono);
+      if (errorTelefono) newErrors.telefono = errorTelefono;
+    }
+
+    // Validar dirección (OBLIGATORIA)
+    const errorDireccion = validarDireccion(formData.direccion);
+    if (errorDireccion) newErrors.direccion = errorDireccion;
+
+    // Validar región y comuna (si se selecciona una, debe seleccionar la otra)
+    if (formData.region && !formData.comuna) {
+      newErrors.comuna = 'Debe seleccionar una comuna para la región elegida';
+    }
+    if (formData.comuna && !formData.region) {
+      newErrors.region = 'Debe seleccionar una región para la comuna elegida';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+
+    onUpdate(usuario.run, formData);
+    onClose();
   };
 
   const getEstadoBadgeClass = (estado) => {
@@ -168,12 +342,20 @@ const UsuarioModal = ({ show, usuario, onClose, onUpdate }) => {
                             <label className="form-label fw-bold">Nombre *</label>
                             <input 
                               type="text" 
-                              className="form-control" 
+                              className={`form-control ${errors.nombre ? 'is-invalid' : ''}`}
                               name="nombre"
                               value={formData.nombre}
                               onChange={handleChange}
+                              placeholder="Ej: Ana María"
+                              minLength="3"
                               required
                             />
+                            {errors.nombre && (
+                              <div className="invalid-feedback">{errors.nombre}</div>
+                            )}
+                            <div className="form-text">
+                              Mínimo 3 caracteres
+                            </div>
                           </div>
                         </div>
                         <div className="col-md-6">
@@ -181,12 +363,20 @@ const UsuarioModal = ({ show, usuario, onClose, onUpdate }) => {
                             <label className="form-label fw-bold">Apellidos *</label>
                             <input 
                               type="text" 
-                              className="form-control" 
+                              className={`form-control ${errors.apellidos ? 'is-invalid' : ''}`}
                               name="apellidos"
                               value={formData.apellidos}
                               onChange={handleChange}
+                              placeholder="Ej: González Pérez"
+                              minLength="3"
                               required
                             />
+                            {errors.apellidos && (
+                              <div className="invalid-feedback">{errors.apellidos}</div>
+                            )}
+                            <div className="form-text">
+                              Mínimo 3 caracteres
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -195,59 +385,110 @@ const UsuarioModal = ({ show, usuario, onClose, onUpdate }) => {
                         <label className="form-label fw-bold">Email *</label>
                         <input 
                           type="email" 
-                          className="form-control" 
+                          className={`form-control ${errors.correo ? 'is-invalid' : ''}`}
                           name="correo"
                           value={formData.correo}
                           onChange={handleChange}
+                          placeholder="Ej: usuario@duoc.cl"
                           required
                         />
+                        {errors.correo && (
+                          <div className="invalid-feedback">{errors.correo}</div>
+                        )}
+                        <div className="form-text">
+                          Dominios permitidos: gmail.com, duoc.cl, profesor.duoc.cl
+                        </div>
                       </div>
                       
                       <div className="mb-3">
                         <label className="form-label fw-bold">Teléfono</label>
                         <input 
                           type="text" 
-                          className="form-control" 
+                          className={`form-control ${errors.telefono ? 'is-invalid' : ''}`}
                           name="telefono"
                           value={formData.telefono}
                           onChange={handleChange}
+                          placeholder="Ej: 912345678"
                         />
+                        {errors.telefono && (
+                          <div className="invalid-feedback">{errors.telefono}</div>
+                        )}
+                        <div className="form-text">
+                          Opcional. Si se ingresa, debe empezar con 9 y tener 9 dígitos
+                        </div>
                       </div>
                       
+                      {/* ✅ DIRECCIÓN OBLIGATORIA */}
                       <div className="mb-3">
-                        <label className="form-label fw-bold">Dirección</label>
+                        <label className="form-label fw-bold">Dirección *</label>
                         <input 
                           type="text" 
-                          className="form-control" 
+                          className={`form-control ${errors.direccion ? 'is-invalid' : ''}`}
                           name="direccion"
                           value={formData.direccion}
                           onChange={handleChange}
+                          placeholder="Ej: Av. Principal 123"
+                          minLength="5"
+                          maxLength="100"
+                          required
                         />
+                        {errors.direccion && (
+                          <div className="invalid-feedback">{errors.direccion}</div>
+                        )}
+                        <div className="form-text">
+                          Entre 5 y 100 caracteres
+                        </div>
                       </div>
                       
+                      {/* ✅ REGIÓN Y COMUNA COMO COMBOBOX */}
                       <div className="row">
-                        <div className="col-md-6">
-                          <div className="mb-3">
-                            <label className="form-label fw-bold">Comuna</label>
-                            <input 
-                              type="text" 
-                              className="form-control" 
-                              name="comuna"
-                              value={formData.comuna}
-                              onChange={handleChange}
-                            />
-                          </div>
-                        </div>
+                        {/* ✅ REGIÓN PRIMERO (IZQUIERDA) */}
                         <div className="col-md-6">
                           <div className="mb-3">
                             <label className="form-label fw-bold">Región</label>
-                            <input 
-                              type="text" 
-                              className="form-control" 
+                            <select
+                              className={`form-select ${errors.region ? 'is-invalid' : ''}`}
                               name="region"
                               value={formData.region}
-                              onChange={handleChange}
-                            />
+                              onChange={handleRegionChange}
+                            >
+                              <option value="">Seleccionar región...</option>
+                              {regionesComunasData.regiones.map(region => (
+                                <option key={region.id} value={region.nombre}>
+                                  {region.nombre}
+                                </option>
+                              ))}
+                            </select>
+                            {errors.region && (
+                              <div className="invalid-feedback">{errors.region}</div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* ✅ COMUNA DESPUÉS (DERECHA) */}
+                        <div className="col-md-6">
+                          <div className="mb-3">
+                            <label className="form-label fw-bold">Comuna</label>
+                            <select
+                              className={`form-select ${errors.comuna ? 'is-invalid' : ''}`}
+                              name="comuna"
+                              value={formData.comuna}
+                              onChange={handleComunaChange}
+                              disabled={!formData.region}
+                            >
+                              <option value="">Seleccionar comuna...</option>
+                              {comunasFiltradas.map(comuna => (
+                                <option key={comuna} value={comuna}>
+                                  {comuna}
+                                </option>
+                              ))}
+                            </select>
+                            {errors.comuna && (
+                              <div className="invalid-feedback">{errors.comuna}</div>
+                            )}
+                            <div className="form-text">
+                              {!formData.region ? 'Primero selecciona una región' : `${comunasFiltradas.length} comunas disponibles`}
+                            </div>
                           </div>
                         </div>
                       </div>

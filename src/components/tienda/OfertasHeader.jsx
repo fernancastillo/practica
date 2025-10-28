@@ -1,4 +1,3 @@
-// src/components/tienda/ofertas/OfertasHeader.jsx
 import React from 'react';
 import { Row, Col, Badge } from 'react-bootstrap';
 

@@ -1,4 +1,3 @@
-// src/components/admin/DashboardStats.jsx
 import { formatCurrency } from '../../utils/admin/dashboardUtils';
 
 const DashboardStats = ({ stats }) => {

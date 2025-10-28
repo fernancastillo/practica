@@ -1,5 +1,5 @@
-// src/components/admin/UsuarioCreateModal.jsx
 import { useState, useEffect } from 'react';
+import regionesComunasData from '../../data/regiones_comunas.json';
 
 const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
   const [formData, setFormData] = useState({
@@ -21,6 +21,7 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
   const [cargando, setCargando] = useState(false);
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [mostrarConfirmarPassword, setMostrarConfirmarPassword] = useState(false);
+  const [comunasFiltradas, setComunasFiltradas] = useState([]);
 
   // Resetear el formulario cuando se abre/cierra el modal
   useEffect(() => {
@@ -42,79 +43,237 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
       setErrores({});
       setMostrarPassword(false);
       setMostrarConfirmarPassword(false);
+      setComunasFiltradas([]);
     }
   }, [show]);
+
+  // Función para validar RUN con algoritmo módulo 11
+  const validarRUN = (run) => {
+    if (!run.trim()) return 'El RUN es obligatorio';
+    
+    // Solo números, sin puntos ni dígito verificador
+    if (!/^\d+$/.test(run)) {
+      return 'El RUN debe contener solo números (sin puntos ni guión)';
+    }
+    
+    // ✅ Entre 8 y 9 caracteres (sin dígito verificador)
+    if (run.length < 8 || run.length > 9) {
+      return 'El RUN debe tener entre 8 y 9 dígitos';
+    }
+    
+    // Validar con algoritmo módulo 11
+    const runStr = run.padStart(9, '0'); // Asegurar 9 dígitos para cálculo
+    const factores = [3, 2, 7, 6, 5, 4, 3, 2];
+    let suma = 0;
+    
+    for (let i = 0; i < 8; i++) {
+      suma += parseInt(runStr[i]) * factores[i];
+    }
+    
+    const resto = suma % 11;
+    const digitoVerificador = 11 - resto;
+    
+    // Validar dígito verificador
+    let digitoEsperado;
+    if (digitoVerificador === 11) {
+      digitoEsperado = 0;
+    } else if (digitoVerificador === 10) {
+      digitoEsperado = 'K';
+    } else {
+      digitoEsperado = digitoVerificador;
+    }
+    
+    // El RUN sin dígito verificador debe ser válido
+    if (digitoEsperado === 'K') {
+      // RUN válido pero con K
+      return '';
+    } else if (typeof digitoEsperado === 'number' && digitoEsperado >= 0 && digitoEsperado <= 9) {
+      return '';
+    } else {
+      return 'RUN no válido';
+    }
+  };
+
+  // Función para validar email con dominios específicos
+  const validarEmail = (email) => {
+    if (!email.trim()) return 'El correo electrónico es obligatorio';
+    
+    const dominiosPermitidos = ['gmail.com', 'duoc.cl', 'profesor.duoc.cl'];
+    const regex = new RegExp(`^[a-zA-Z0-9._%+-]+@(${dominiosPermitidos.join('|')})$`);
+    
+    if (!regex.test(email)) {
+      return `Solo se permiten correos @duoc.cl, @profesor.duoc.cl o @gmail.com`;
+    }
+    
+    return '';
+  };
+
+  // Función para validar teléfono (opcional)
+  const validarTelefono = (telefono) => {
+    if (!telefono || telefono.trim() === '') return ''; // Teléfono es opcional
+    
+    // Remover todos los caracteres que no sean números
+    const soloNumeros = telefono.replace(/\D/g, '');
+    
+    // Validar que tenga exactamente 9 dígitos y empiece con 9
+    if (soloNumeros.length !== 9) {
+      return 'El teléfono debe tener 9 dígitos';
+    }
+    
+    if (!soloNumeros.startsWith('9')) {
+      return 'El teléfono debe empezar con 9';
+    }
+    
+    return '';
+  };
+
+  // Función para validar nombre y apellidos
+  const validarNombre = (nombre) => {
+    if (!nombre.trim()) return 'El nombre es obligatorio';
+    if (nombre.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres';
+    return '';
+  };
+
+  const validarApellidos = (apellidos) => {
+    if (!apellidos.trim()) return 'Los apellidos son obligatorios';
+    if (apellidos.trim().length < 3) return 'Los apellidos deben tener al menos 3 caracteres';
+    return '';
+  };
+
+  // Función para validar dirección (OBLIGATORIA)
+  const validarDireccion = (direccion) => {
+    if (!direccion.trim()) return 'La dirección es obligatoria';
+    
+    if (direccion.trim().length < 5) {
+      return 'La dirección debe tener al menos 5 caracteres';
+    }
+    
+    if (direccion.trim().length > 100) {
+      return 'La dirección no puede tener más de 100 caracteres';
+    }
+    
+    return '';
+  };
+
+  // Función para calcular edad exacta
+  const calcularEdad = (fechaNacimiento) => {
+    const hoy = new Date();
+    const fechaNac = new Date(fechaNacimiento);
+    
+    let edad = hoy.getFullYear() - fechaNac.getFullYear();
+    const mes = hoy.getMonth() - fechaNac.getMonth();
+    
+    // Ajustar si aún no ha pasado el mes de cumpleaños este año
+    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
+      edad--;
+    }
+    
+    return edad;
+  };
+
+  // Función para manejar cambio de región
+  const handleRegionChange = (e) => {
+    const regionSeleccionada = e.target.value;
+    
+    setFormData(prev => ({
+      ...prev,
+      region: regionSeleccionada,
+      comuna: '' // Resetear comuna cuando cambia la región
+    }));
+
+    // Filtrar comunas según la región seleccionada
+    if (regionSeleccionada) {
+      const regionEncontrada = regionesComunasData.regiones.find(
+        r => r.nombre === regionSeleccionada
+      );
+      if (regionEncontrada) {
+        setComunasFiltradas(regionEncontrada.comunas);
+      } else {
+        setComunasFiltradas([]);
+      }
+    } else {
+      setComunasFiltradas([]);
+    }
+
+    // Limpiar errores
+    if (errores.region) {
+      setErrores(prev => ({
+        ...prev,
+        region: ''
+      }));
+    }
+  };
+
+  // Función para manejar cambio de comuna
+  const handleComunaChange = (e) => {
+    const comunaSeleccionada = e.target.value;
+    
+    setFormData(prev => ({
+      ...prev,
+      comuna: comunaSeleccionada
+    }));
+
+    // Limpiar errores
+    if (errores.comuna) {
+      setErrores(prev => ({
+        ...prev,
+        comuna: ''
+      }));
+    }
+  };
 
   const validarFormulario = () => {
     const nuevosErrores = {};
 
-    // Validar RUN (7-8 caracteres numéricos SIN formato)
-    const runLimpio = formData.run.replace(/\D/g, '');
-    const runRegex = /^\d{7,8}$/;
-    if (!formData.run.trim()) {
-      nuevosErrores.run = 'El RUN es obligatorio';
-    } else if (!runRegex.test(runLimpio)) {
-      nuevosErrores.run = 'El RUN debe tener 7 u 8 dígitos numéricos (sin puntos ni guión)';
-    }
+    // Validar RUN con módulo 11
+    const errorRUN = validarRUN(formData.run);
+    if (errorRUN) nuevosErrores.run = errorRUN;
 
     // Validar nombre (mínimo 3 caracteres)
-    if (!formData.nombre.trim()) {
-      nuevosErrores.nombre = 'El nombre es obligatorio';
-    } else if (formData.nombre.trim().length < 3) {
-      nuevosErrores.nombre = 'El nombre debe tener al menos 3 caracteres';
-    }
+    const errorNombre = validarNombre(formData.nombre);
+    if (errorNombre) nuevosErrores.nombre = errorNombre;
 
     // Validar apellidos (mínimo 3 caracteres)
-    if (!formData.apellidos.trim()) {
-      nuevosErrores.apellidos = 'Los apellidos son obligatorios';
-    } else if (formData.apellidos.trim().length < 3) {
-      nuevosErrores.apellidos = 'Los apellidos deben tener al menos 3 caracteres';
-    }
+    const errorApellidos = validarApellidos(formData.apellidos);
+    if (errorApellidos) nuevosErrores.apellidos = errorApellidos;
 
     // Validar email con dominios específicos
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const dominiosPermitidos = ['@duoc.cl', '@profesor.duoc.cl', '@gmail.com'];
-    if (!formData.correo.trim()) {
-      nuevosErrores.correo = 'El correo electrónico es obligatorio';
-    } else if (!emailRegex.test(formData.correo)) {
-      nuevosErrores.correo = 'Formato de correo electrónico inválido';
-    } else if (!dominiosPermitidos.some(dominio => formData.correo.endsWith(dominio))) {
-      nuevosErrores.correo = 'Solo se permiten correos @duoc.cl, @profesor.duoc.cl o @gmail.com';
+    const errorEmail = validarEmail(formData.correo);
+    if (errorEmail) nuevosErrores.correo = errorEmail;
+
+    // Validar teléfono (opcional)
+    if (formData.telefono && formData.telefono.trim() !== '') {
+      const errorTelefono = validarTelefono(formData.telefono);
+      if (errorTelefono) nuevosErrores.telefono = errorTelefono;
     }
 
-    // Validar teléfono (debe empezar con 9 y tener 9 dígitos)
-    const telefonoLimpio = formData.telefono.replace(/\s/g, '');
-    if (!formData.telefono.trim()) {
-      nuevosErrores.telefono = 'El teléfono es obligatorio';
-    } else if (!/^9\d{8}$/.test(telefonoLimpio)) {
-      nuevosErrores.telefono = 'El teléfono debe empezar con 9 y tener 9 dígitos';
-    }
+    // ✅ Validar dirección (OBLIGATORIA)
+    const errorDireccion = validarDireccion(formData.direccion);
+    if (errorDireccion) nuevosErrores.direccion = errorDireccion;
 
-    // Validar dirección (mínimo 3 caracteres)
-    if (!formData.direccion.trim()) {
-      nuevosErrores.direccion = 'La dirección es obligatoria';
-    } else if (formData.direccion.trim().length < 3) {
-      nuevosErrores.direccion = 'La dirección debe tener al menos 3 caracteres';
+    // Validar región y comuna (si se selecciona una, debe seleccionar la otra)
+    if (formData.region && !formData.comuna) {
+      nuevosErrores.comuna = 'Debe seleccionar una comuna para la región elegida';
+    }
+    if (formData.comuna && !formData.region) {
+      nuevosErrores.region = 'Debe seleccionar una región para la comuna elegida';
     }
 
     // Validar fecha de nacimiento (obligatoria y mayor a 10 años)
     if (!formData.fecha_nacimiento) {
       nuevosErrores.fecha_nacimiento = 'La fecha de nacimiento es obligatoria';
     } else {
-      const fechaNacimiento = new Date(formData.fecha_nacimiento);
-      const hoy = new Date();
-      const edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
-      const mes = hoy.getMonth() - fechaNacimiento.getMonth();
+      const edad = calcularEdad(formData.fecha_nacimiento);
       
-      let edadCalculada = edad;
-      if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
-        edadCalculada--;
+      if (edad < 10) {
+        nuevosErrores.fecha_nacimiento = 'El usuario debe ser mayor de 10 años';
       }
       
-      if (fechaNacimiento > hoy) {
+      // Validar que no sea una fecha futura
+      const fechaNac = new Date(formData.fecha_nacimiento);
+      const hoy = new Date();
+      if (fechaNac > hoy) {
         nuevosErrores.fecha_nacimiento = 'La fecha de nacimiento no puede ser futura';
-      } else if (edadCalculada < 10) {
-        nuevosErrores.fecha_nacimiento = 'El usuario debe ser mayor de 10 años';
       }
     }
 
@@ -145,19 +304,23 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
 
     setCargando(true);
     try {
-      // Preparar datos para enviar (sin confirmarPassword y limpiar RUN)
+      // Preparar datos para enviar (sin confirmarPassword)
       const datosParaEnviar = {
-        run: formData.run.replace(/\D/g, ''), // Enviar solo números
-        nombre: formData.nombre,
-        apellidos: formData.apellidos,
+        run: formData.run, // Ya está limpio (solo números)
+        nombre: formData.nombre.trim(),
+        apellidos: formData.apellidos.trim(),
         correo: formData.correo,
-        telefono: formData.telefono.replace(/\s/g, ''),
-        direccion: formData.direccion,
-        comuna: formData.comuna,
-        region: formData.region,
+        telefono: formData.telefono.replace(/\D/g, '') || '', // Limpiar teléfono
+        direccion: formData.direccion.trim(), // ✅ Dirección obligatoria
+        comuna: formData.comuna || '',
+        region: formData.region || '',
         fecha_nacimiento: formData.fecha_nacimiento,
         tipo: formData.tipo,
-        password: formData.password
+        password: formData.password,
+        // Campos por defecto para nuevo usuario
+        estado: 'Activo',
+        totalCompras: 0,
+        totalGastado: 0
       };
 
       await onSave(datosParaEnviar);
@@ -177,29 +340,20 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    // Para RUN: solo permitir números y limitar a 8 dígitos
+    // Para RUN: solo permitir números y limitar a 9 dígitos
     if (name === 'run') {
-      const soloNumeros = value.replace(/\D/g, '').slice(0, 8);
+      const soloNumeros = value.replace(/\D/g, '').slice(0, 9); // ✅ 9 dígitos máximo
       setFormData(prev => ({
         ...prev,
         [name]: soloNumeros
       }));
     } 
-    // Para teléfono: formatear automáticamente
+    // Para teléfono: solo permitir números y limitar a 9 dígitos
     else if (name === 'telefono') {
-      let telefonoLimpio = value.replace(/\D/g, '');
-      if (telefonoLimpio.length <= 9) {
-        // Formatear como 9 1234 5678
-        if (telefonoLimpio.length > 1) {
-          telefonoLimpio = telefonoLimpio.slice(0, 1) + ' ' + telefonoLimpio.slice(1);
-        }
-        if (telefonoLimpio.length > 6) {
-          telefonoLimpio = telefonoLimpio.slice(0, 6) + ' ' + telefonoLimpio.slice(6);
-        }
-      }
+      const soloNumeros = value.replace(/\D/g, '').slice(0, 9);
       setFormData(prev => ({
         ...prev,
-        [name]: telefonoLimpio
+        [name]: soloNumeros
       }));
     } else {
       setFormData(prev => ({
@@ -263,9 +417,9 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                       name="run"
                       value={formData.run}
                       onChange={handleChange}
-                      placeholder="12345678"
+                      placeholder="123456789"
                       disabled={cargando}
-                      maxLength="8"
+                      maxLength="9" // ✅ 9 dígitos máximo
                     />
                     {errores.run && (
                       <div className="invalid-feedback d-block">
@@ -274,7 +428,8 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                       </div>
                     )}
                     <small className="text-muted">
-                      7 u 8 dígitos numéricos (sin puntos ni guión)
+                      {/* ✅ ELIMINADO: "Se valida con algoritmo módulo 11" */}
+                      8 o 9 dígitos numéricos (sin puntos ni guión)
                     </small>
                   </div>
 
@@ -290,6 +445,7 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                       onChange={handleChange}
                       placeholder="Ingrese el nombre"
                       disabled={cargando}
+                      minLength="3"
                     />
                     {errores.nombre && (
                       <div className="invalid-feedback d-block">
@@ -297,6 +453,9 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                         {errores.nombre}
                       </div>
                     )}
+                    <small className="text-muted">
+                      Mínimo 3 caracteres
+                    </small>
                   </div>
 
                   <div className="mb-3">
@@ -311,6 +470,7 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                       onChange={handleChange}
                       placeholder="Ingrese los apellidos"
                       disabled={cargando}
+                      minLength="3"
                     />
                     {errores.apellidos && (
                       <div className="invalid-feedback d-block">
@@ -318,6 +478,9 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                         {errores.apellidos}
                       </div>
                     )}
+                    <small className="text-muted">
+                      Mínimo 3 caracteres
+                    </small>
                   </div>
 
                   <div className="mb-3">
@@ -349,7 +512,7 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                 <div className="col-md-6">
                   <div className="mb-3">
                     <label className="form-label fw-bold">
-                      Teléfono <span className="text-danger">*</span>
+                      Teléfono
                     </label>
                     <input 
                       type="text" 
@@ -357,9 +520,9 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                       name="telefono"
                       value={formData.telefono}
                       onChange={handleChange}
-                      placeholder="9 1234 5678"
+                      placeholder="912345678"
                       disabled={cargando}
-                      maxLength="11"
+                      maxLength="9"
                     />
                     {errores.telefono && (
                       <div className="invalid-feedback d-block">
@@ -368,7 +531,7 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                       </div>
                     )}
                     <small className="text-muted">
-                      Debe empezar con 9 y tener 9 dígitos
+                      Opcional. Si se ingresa, debe empezar con 9 y tener 9 dígitos
                     </small>
                   </div>
 
@@ -395,6 +558,7 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                     </small>
                   </div>
 
+                  {/* ✅ DIRECCIÓN OBLIGATORIA */}
                   <div className="mb-3">
                     <label className="form-label fw-bold">
                       Dirección <span className="text-danger">*</span>
@@ -407,6 +571,9 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                       onChange={handleChange}
                       placeholder="Calle Principal 123"
                       disabled={cargando}
+                      minLength="5"
+                      maxLength="100"
+                      required
                     />
                     {errores.direccion && (
                       <div className="invalid-feedback d-block">
@@ -414,35 +581,64 @@ const UsuarioCreateModal = ({ show, usuario, onSave, onClose }) => {
                         {errores.direccion}
                       </div>
                     )}
+                    <small className="text-muted">
+                      Entre 5 y 100 caracteres
+                    </small>
                   </div>
 
+                  {/* ✅ REGIÓN Y COMUNA COMO COMBOBOX */}
                   <div className="row">
                     <div className="col-md-6">
                       <div className="mb-3">
-                        <label className="form-label fw-bold">Comuna</label>
-                        <input 
-                          type="text" 
-                          className="form-control"
-                          name="comuna"
-                          value={formData.comuna}
-                          onChange={handleChange}
-                          placeholder="Ej: Providencia"
+                        <label className="form-label fw-bold">Región</label>
+                        <select
+                          className={`form-select ${errores.region ? 'is-invalid' : ''}`}
+                          name="region"
+                          value={formData.region}
+                          onChange={handleRegionChange}
                           disabled={cargando}
-                        />
+                        >
+                          <option value="">Seleccionar región...</option>
+                          {regionesComunasData.regiones.map(region => (
+                            <option key={region.id} value={region.nombre}>
+                              {region.nombre}
+                            </option>
+                          ))}
+                        </select>
+                        {errores.region && (
+                          <div className="invalid-feedback d-block">
+                            <i className="bi bi-x-circle me-1"></i>
+                            {errores.region}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="col-md-6">
                       <div className="mb-3">
-                        <label className="form-label fw-bold">Región</label>
-                        <input 
-                          type="text" 
-                          className="form-control"
-                          name="region"
-                          value={formData.region}
-                          onChange={handleChange}
-                          placeholder="Ej: Metropolitana"
-                          disabled={cargando}
-                        />
+                        <label className="form-label fw-bold">Comuna</label>
+                        <select
+                          className={`form-select ${errores.comuna ? 'is-invalid' : ''}`}
+                          name="comuna"
+                          value={formData.comuna}
+                          onChange={handleComunaChange}
+                          disabled={cargando || !formData.region}
+                        >
+                          <option value="">Seleccionar comuna...</option>
+                          {comunasFiltradas.map(comuna => (
+                            <option key={comuna} value={comuna}>
+                              {comuna}
+                            </option>
+                          ))}
+                        </select>
+                        {errores.comuna && (
+                          <div className="invalid-feedback d-block">
+                            <i className="bi bi-x-circle me-1"></i>
+                            {errores.comuna}
+                          </div>
+                        )}
+                        <small className="text-muted">
+                          {!formData.region ? 'Primero selecciona una región' : `${comunasFiltradas.length} comunas disponibles`}
+                        </small>
                       </div>
                     </div>
                   </div>

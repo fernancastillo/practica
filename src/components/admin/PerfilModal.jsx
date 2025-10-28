@@ -1,5 +1,7 @@
-// src/components/admin/PerfilModal.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+// Importar datos de regiones y comunas
+import regionesComunasData from '../../data/regiones_comunas.json';
 
 const PerfilModal = ({
   show,
@@ -13,12 +15,74 @@ const PerfilModal = ({
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [mostrarConfirmarPassword, setMostrarConfirmarPassword] = useState(false);
   const [errores, setErrores] = useState({});
+  const [comunasFiltradas, setComunasFiltradas] = useState([]);
+
+  // Inicializar comunas filtradas cuando cambia la región
+  useEffect(() => {
+    if (formData.region) {
+      const regionEncontrada = regionesComunasData.regiones.find(
+        r => r.nombre === formData.region
+      );
+      if (regionEncontrada) {
+        setComunasFiltradas(regionEncontrada.comunas);
+      } else {
+        setComunasFiltradas([]);
+      }
+    } else {
+      setComunasFiltradas([]);
+    }
+  }, [formData.region]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
     if (validarFormulario()) {
       onSubmit(e);
+    }
+  };
+
+  // Función para manejar cambio de región
+  const handleRegionChange = (e) => {
+    const regionSeleccionada = e.target.value;
+    
+    // Actualizar región y resetear comuna
+    onChange({ target: { name: 'region', value: regionSeleccionada } });
+    onChange({ target: { name: 'comuna', value: '' } });
+
+    // Filtrar comunas según la región seleccionada
+    if (regionSeleccionada) {
+      const regionEncontrada = regionesComunasData.regiones.find(
+        r => r.nombre === regionSeleccionada
+      );
+      if (regionEncontrada) {
+        setComunasFiltradas(regionEncontrada.comunas);
+      } else {
+        setComunasFiltradas([]);
+      }
+    } else {
+      setComunasFiltradas([]);
+    }
+
+    // Limpiar errores
+    if (errores.region) {
+      setErrores(prev => ({
+        ...prev,
+        region: ''
+      }));
+    }
+  };
+
+  // Función para manejar cambio de comuna
+  const handleComunaChange = (e) => {
+    const comunaSeleccionada = e.target.value;
+    onChange({ target: { name: 'comuna', value: comunaSeleccionada } });
+
+    // Limpiar errores
+    if (errores.comuna) {
+      setErrores(prev => ({
+        ...prev,
+        comuna: ''
+      }));
     }
   };
 
@@ -33,22 +97,61 @@ const PerfilModal = ({
       }));
     }
 
-    // Para teléfono: formatear automáticamente
+    // Para teléfono: solo permitir números y limitar a 9 dígitos
     if (name === 'telefono') {
-      let telefonoLimpio = value.replace(/\D/g, '');
-      if (telefonoLimpio.length <= 9) {
-        // Formatear como 9 1234 5678
-        if (telefonoLimpio.length > 1) {
-          telefonoLimpio = telefonoLimpio.slice(0, 1) + ' ' + telefonoLimpio.slice(1);
-        }
-        if (telefonoLimpio.length > 6) {
-          telefonoLimpio = telefonoLimpio.slice(0, 6) + ' ' + telefonoLimpio.slice(6);
-        }
-      }
-      onChange({ target: { name, value: telefonoLimpio } });
+      const soloNumeros = value.replace(/\D/g, '').slice(0, 9);
+      onChange({ target: { name, value: soloNumeros } });
     } else {
       onChange(e);
     }
+  };
+
+  // Función para validar email con dominios específicos
+  const validarEmail = (email) => {
+    if (!email?.trim()) return 'El correo electrónico es obligatorio';
+    
+    const dominiosPermitidos = ['gmail.com', 'duoc.cl', 'profesor.duoc.cl'];
+    const regex = new RegExp(`^[a-zA-Z0-9._%+-]+@(${dominiosPermitidos.join('|')})$`);
+    
+    if (!regex.test(email)) {
+      return `Solo se permiten correos @duoc.cl, @profesor.duoc.cl o @gmail.com`;
+    }
+    
+    return '';
+  };
+
+  // Función para validar teléfono (opcional)
+  const validarTelefono = (telefono) => {
+    if (!telefono || telefono.trim() === '') return ''; // Teléfono es opcional
+    
+    // Remover todos los caracteres que no sean números
+    const soloNumeros = telefono.replace(/\D/g, '');
+    
+    // Validar que tenga exactamente 9 dígitos y empiece con 9
+    if (soloNumeros.length !== 9) {
+      return 'El teléfono debe tener 9 dígitos';
+    }
+    
+    if (!soloNumeros.startsWith('9')) {
+      return 'El teléfono debe empezar con 9';
+    }
+    
+    return '';
+  };
+
+  // Función para validar dirección (OBLIGATORIA)
+  const validarDireccion = (direccion) => {
+    if (!direccion?.trim()) return 'La dirección es obligatoria';
+    
+    if (direccion.trim().length < 5) {
+      return 'La dirección debe tener al menos 5 caracteres';
+    }
+    
+    if (direccion.trim().length > 100) {
+      return 'La dirección no puede tener más de 100 caracteres';
+    }
+    
+    return '';
   };
 
   const validarFormulario = () => {
@@ -69,25 +172,25 @@ const PerfilModal = ({
     }
 
     // Validar email con dominios específicos
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const dominiosPermitidos = ['@duoc.cl', '@profesor.duoc.cl', '@gmail.com'];
-    if (!formData.correo?.trim()) {
-      nuevosErrores.correo = 'El correo electrónico es obligatorio';
-    } else if (!emailRegex.test(formData.correo)) {
-      nuevosErrores.correo = 'Formato de correo electrónico inválido';
-    } else if (!dominiosPermitidos.some(dominio => formData.correo.endsWith(dominio))) {
-      nuevosErrores.correo = 'Solo se permiten correos @duoc.cl, @profesor.duoc.cl o @gmail.com';
+    const errorEmail = validarEmail(formData.correo);
+    if (errorEmail) nuevosErrores.correo = errorEmail;
+
+    // Validar teléfono (opcional)
+    if (formData.telefono && formData.telefono.trim() !== '') {
+      const errorTelefono = validarTelefono(formData.telefono);
+      if (errorTelefono) nuevosErrores.telefono = errorTelefono;
     }
 
-    // Validar teléfono (debe empezar con 9 y tener 9 dígitos)
-    const telefonoLimpio = formData.telefono?.replace(/\s/g, '') || '';
-    if (formData.telefono && !/^9\d{8}$/.test(telefonoLimpio)) {
-      nuevosErrores.telefono = 'El teléfono debe empezar con 9 y tener 9 dígitos';
-    }
+    // ✅ Validar dirección (OBLIGATORIA)
+    const errorDireccion = validarDireccion(formData.direccion);
+    if (errorDireccion) nuevosErrores.direccion = errorDireccion;
 
-    // Validar dirección (mínimo 3 caracteres si se proporciona)
-    if (formData.direccion && formData.direccion.trim().length < 3) {
-      nuevosErrores.direccion = 'La dirección debe tener al menos 3 caracteres';
+    // Validar región y comuna (si se selecciona una, debe seleccionar la otra)
+    if (formData.region && !formData.comuna) {
+      nuevosErrores.comuna = 'Debe seleccionar una comuna para la región elegida';
+    }
+    if (formData.comuna && !formData.region) {
+      nuevosErrores.region = 'Debe seleccionar una región para la comuna elegida';
     }
 
     // Validar fecha de nacimiento (mayor a 10 años si se proporciona)
@@ -164,6 +267,8 @@ const PerfilModal = ({
                       name="nombre"
                       value={formData.nombre || ''}
                       onChange={handleChange}
+                      placeholder="Ej: Ana María"
+                      minLength="3"
                       required
                     />
                     {errores.nombre && (
@@ -172,6 +277,9 @@ const PerfilModal = ({
                         {errores.nombre}
                       </div>
                     )}
+                    <div className="form-text">
+                      Mínimo 3 caracteres
+                    </div>
                   </div>
                 </div>
                 <div className="col-md-6">
@@ -185,6 +293,8 @@ const PerfilModal = ({
                       name="apellidos"
                       value={formData.apellidos || ''}
                       onChange={handleChange}
+                      placeholder="Ej: González Pérez"
+                      minLength="3"
                       required
                     />
                     {errores.apellidos && (
@@ -193,6 +303,9 @@ const PerfilModal = ({
                         {errores.apellidos}
                       </div>
                     )}
+                    <div className="form-text">
+                      Mínimo 3 caracteres
+                    </div>
                   </div>
                 </div>
               </div>
@@ -207,6 +320,7 @@ const PerfilModal = ({
                   name="correo"
                   value={formData.correo || ''}
                   onChange={handleChange}
+                  placeholder="Ej: usuario@duoc.cl"
                   required
                 />
                 {errores.correo && (
@@ -216,7 +330,7 @@ const PerfilModal = ({
                   </div>
                 )}
                 <small className="text-muted">
-                  Solo @duoc.cl, @profesor.duoc.cl o @gmail.com
+                  Dominios permitidos: gmail.com, duoc.cl, profesor.duoc.cl
                 </small>
               </div>
 
@@ -228,8 +342,8 @@ const PerfilModal = ({
                   name="telefono"
                   value={formData.telefono || ''}
                   onChange={handleChange}
-                  placeholder="9 1234 5678"
-                  maxLength="11"
+                  placeholder="912345678"
+                  maxLength="9"
                 />
                 {errores.telefono && (
                   <div className="invalid-feedback d-block">
@@ -238,19 +352,25 @@ const PerfilModal = ({
                   </div>
                 )}
                 <small className="text-muted">
-                  Debe empezar con 9 y tener 9 dígitos
+                  Opcional. Si se ingresa, debe empezar con 9 y tener 9 dígitos
                 </small>
               </div>
 
+              {/* ✅ DIRECCIÓN OBLIGATORIA */}
               <div className="mb-3">
-                <label className="form-label fw-bold">Dirección</label>
+                <label className="form-label fw-bold">
+                  Dirección <span className="text-danger">*</span>
+                </label>
                 <input 
                   type="text" 
                   className={getInputClass('direccion')}
                   name="direccion"
                   value={formData.direccion || ''}
                   onChange={handleChange}
-                  placeholder="Calle Principal 123"
+                  placeholder="Ej: Av. Principal 123"
+                  minLength="5"
+                  maxLength="100"
+                  required
                 />
                 {errores.direccion && (
                   <div className="invalid-feedback d-block">
@@ -258,33 +378,66 @@ const PerfilModal = ({
                     {errores.direccion}
                   </div>
                 )}
+                <small className="text-muted">
+                  Entre 5 y 100 caracteres
+                </small>
               </div>
 
+              {/* ✅ REGIÓN Y COMUNA COMO COMBOBOX */}
               <div className="row">
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="form-label fw-bold">Comuna</label>
-                    <input 
-                      type="text" 
-                      className="form-control"
-                      name="comuna"
-                      value={formData.comuna || ''}
-                      onChange={handleChange}
-                      placeholder="Ej: Providencia"
-                    />
-                  </div>
-                </div>
+                {/* ✅ REGIÓN PRIMERO (IZQUIERDA) */}
                 <div className="col-md-6">
                   <div className="mb-3">
                     <label className="form-label fw-bold">Región</label>
-                    <input 
-                      type="text" 
-                      className="form-control"
+                    <select
+                      className={`form-select ${errores.region ? 'is-invalid' : ''}`}
                       name="region"
                       value={formData.region || ''}
-                      onChange={handleChange}
-                      placeholder="Ej: Metropolitana"
-                    />
+                      onChange={handleRegionChange}
+                    >
+                      <option value="">Seleccionar región...</option>
+                      {regionesComunasData.regiones.map(region => (
+                        <option key={region.id} value={region.nombre}>
+                          {region.nombre}
+                        </option>
+                      ))}
+                    </select>
+                    {errores.region && (
+                      <div className="invalid-feedback d-block">
+                        <i className="bi bi-x-circle me-1"></i>
+                        {errores.region}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ✅ COMUNA DESPUÉS (DERECHA) */}
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label className="form-label fw-bold">Comuna</label>
+                    <select
+                      className={`form-select ${errores.comuna ? 'is-invalid' : ''}`}
+                      name="comuna"
+                      value={formData.comuna || ''}
+                      onChange={handleComunaChange}
+                      disabled={!formData.region}
+                    >
+                      <option value="">Seleccionar comuna...</option>
+                      {comunasFiltradas.map(comuna => (
+                        <option key={comuna} value={comuna}>
+                          {comuna}
+                        </option>
+                      ))}
+                    </select>
+                    {errores.comuna && (
+                      <div className="invalid-feedback d-block">
+                        <i className="bi bi-x-circle me-1"></i>
+                        {errores.comuna}
+                      </div>
+                    )}
+                    <div className="form-text">
+                      {!formData.region ? 'Primero selecciona una región' : `${comunasFiltradas.length} comunas disponibles`}
+                    </div>
                   </div>
                 </div>
               </div>

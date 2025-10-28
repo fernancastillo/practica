@@ -1,4 +1,3 @@
-// src/components/tienda/SeccionComunidad.jsx
 import React from 'react';
 import { Row, Col } from 'react-bootstrap';
 import CardNosotros from './CardNosotros';

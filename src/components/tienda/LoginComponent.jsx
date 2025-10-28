@@ -1,4 +1,3 @@
-// src/components/tienda/login/LoginComponent.jsx
 import React, { useState } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, InputGroup, Modal } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';

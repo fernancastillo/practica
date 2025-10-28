@@ -1,4 +1,3 @@
-// src/components/tienda/BlogCard.jsx
 import React from 'react';
 import { Card, Badge, Button } from 'react-bootstrap';
 

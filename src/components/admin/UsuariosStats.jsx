@@ -1,4 +1,3 @@
-// src/components/admin/UsuariosStats.jsx
 import { formatCurrency } from '../../utils/admin/dashboardUtils';
 
 const UsuariosStats = ({ estadisticas }) => {

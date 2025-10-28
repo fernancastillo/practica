@@ -1,4 +1,3 @@
-// components/admin/OrdenesFiltros.jsx
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
 
 const OrdenesFiltros = ({ filtros, onFiltroChange, onLimpiarFiltros, resultados }) => {

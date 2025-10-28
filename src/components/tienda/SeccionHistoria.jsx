@@ -1,10 +1,8 @@
-// src/components/tienda/SeccionHistoria.jsx
 import React from 'react';
 import { Row, Col, Card } from 'react-bootstrap';
 import CardNosotros from './CardNosotros';
 import ImagenNosotros from './ImagenNosotros';
-// Cambiar la importación de la imagen
-import historiaImage from '../../assets/tienda/junimoshop.png'; // ✅ IMAGEN CAMBIADA
+import historiaImage from '../../assets/tienda/junimoshop.png'; 
 
 const SeccionHistoria = () => {
   return (

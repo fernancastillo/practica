@@ -1,4 +1,3 @@
-// src/components/admin/PerfilForm.jsx
 import { formatDate } from '../../utils/admin/dashboardUtils';
 
 const PerfilForm = ({ usuario, onEdit }) => {

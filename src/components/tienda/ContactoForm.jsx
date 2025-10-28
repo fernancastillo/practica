@@ -1,4 +1,3 @@
-// src/components/tienda/ContactoForm.jsx
 import { Form, Button, Alert, Row, Col, Card } from 'react-bootstrap';
 
 export const ContactoForm = ({

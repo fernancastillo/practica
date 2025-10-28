@@ -1,4 +1,3 @@
-// src/components/admin/UsuariosTable.jsx
 import { formatCurrency, formatDate } from '../../utils/admin/dashboardUtils';
 
 const UsuariosTable = ({ usuarios, onEdit, onDelete }) => {

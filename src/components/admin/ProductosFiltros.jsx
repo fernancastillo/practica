@@ -1,4 +1,3 @@
-// src/components/admin/ProductosFiltros.jsx
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
 
 const ProductosFiltros = ({ filtros, onFiltroChange, onLimpiarFiltros, resultados, categorias }) => {

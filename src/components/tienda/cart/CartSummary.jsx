@@ -1,4 +1,3 @@
-// src/components/tienda/cart/CartSummary.jsx
 import React from 'react';
 import { Card, Button, Alert, Badge } from 'react-bootstrap';
 import { Link } from 'react-router-dom';

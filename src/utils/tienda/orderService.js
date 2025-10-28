@@ -1,41 +1,49 @@
+// src/utils/orderService.js
 export const orderService = {
-  // Crear nueva orden
-  createOrder: (cartItems, userInfo, total) => {
-    const orders = orderService.getOrders();
-    const newOrder = {
-      id: Date.now().toString(),
-      fecha: new Date().toISOString(),
-      items: [...cartItems],
-      total: total,
-      estado: 'pendiente',
-      usuario: userInfo,
-      direccionEnvio: userInfo.direccion || {}
-    };
-
-    const updatedOrders = [...orders, newOrder];
-    localStorage.setItem('junimoOrders', JSON.stringify(updatedOrders));
-    return newOrder;
-  },
-
   // Obtener todas las órdenes
-  getOrders: () => {
-    const savedOrders = localStorage.getItem('junimoOrders');
-    return savedOrders ? JSON.parse(savedOrders) : [];
+  getAllOrders: () => {
+    try {
+      const orders = localStorage.getItem('app_ordenes');
+      const parsedOrders = orders ? JSON.parse(orders) : [];
+      console.log('📊 Total de órdenes en sistema:', parsedOrders.length);
+      return parsedOrders;
+    } catch (error) {
+      console.error('Error al obtener órdenes:', error);
+      return [];
+    }
   },
 
-  // Obtener órdenes por usuario
-  getUserOrders: (userId) => {
-    const orders = orderService.getOrders();
-    return orders.filter(order => order.usuario.id === userId);
+  // Obtener órdenes de un usuario específico por RUN
+  getUserOrders: (userRun) => {
+    try {
+      const orders = orderService.getAllOrders();
+      console.log('🔍 Buscando órdenes para RUN:', userRun);
+      
+      if (!userRun) {
+        console.error('❌ RUN del usuario no proporcionado');
+        return [];
+      }
+      
+      // Buscar órdenes que coincidan con el RUN del usuario
+      const userOrders = orders.filter(order => {
+        const match = order.run === userRun;
+        if (match) {
+          console.log('✅ Orden encontrada:', order.numeroOrden);
+        }
+        return match;
+      });
+      
+      console.log('📦 Órdenes encontradas para el usuario:', userOrders.length);
+      return userOrders;
+    } catch (error) {
+      console.error('Error al obtener órdenes del usuario:', error);
+      return [];
+    }
   },
 
-  // Actualizar estado de orden
-  updateOrderStatus: (orderId, newStatus) => {
-    const orders = orderService.getOrders();
-    const updatedOrders = orders.map(order =>
-      order.id === orderId ? { ...order, estado: newStatus } : order
-    );
-    localStorage.setItem('junimoOrders', JSON.stringify(updatedOrders));
-    return updatedOrders;
+  // Obtener orden por número de orden
+  getOrderByNumber: (orderNumber) => {
+    const orders = orderService.getAllOrders();
+    return orders.find(order => order.numeroOrden === orderNumber);
   }
 };

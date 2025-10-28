@@ -1,4 +1,3 @@
-// src/components/admin/UsuariosFiltros.jsx
 import { Card, Row, Col, Form, Button } from 'react-bootstrap';
 
 const UsuariosFiltros = ({ filtros, onFiltroChange, onLimpiarFiltros, resultados }) => {

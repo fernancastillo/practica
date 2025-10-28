@@ -1,9 +1,15 @@
-// src/pages/tienda/Login.jsx
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Container, Row, Col, Card, Form, Button, Alert, InputGroup } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
+import { Container, Row, Col } from 'react-bootstrap';
+
+// Components
+import LoginHeader from '../../components/tienda/LoginHeader';
+import LoginForm from '../../components/tienda/LoginForm';
+import { SuccessModal, ErrorModal } from '../../components/tienda/LoginModals';
+
+// Utils
+import { useLoginLogic, loginValidations } from '../../utils/tienda/loginService';
 import { authService } from '../../utils/tienda/authService';
-import loginImage from '../../assets/tienda/login.png';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -13,24 +19,16 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [loginResult, setLoginResult] = useState({});
+  
   const navigate = useNavigate();
+  const { handleLogin, getRedirectPath, checkExistingAuth } = useLoginLogic();
 
   // Verificar si ya está autenticado
   useEffect(() => {
-    if (authService.isAuthenticated()) {
-      const userType = authService.getUserType();
-      const currentUser = authService.getCurrentUser();
-      console.log('🔄 Usuario ya autenticado - Redirigiendo...');
-      console.log('👤 Tipo de usuario:', userType);
-      console.log('👤 Usuario actual:', currentUser);
-      
-      // ✅ CORREGIDO: Usar la misma lógica que en authService
-      const isAdmin = userType === 'Administrador' || userType === 'Admin';
-      const redirectTo = isAdmin ? '/admin/dashboard' : '/index';
-      
-      console.log('🔄 Redirigiendo a:', redirectTo);
-      navigate(redirectTo, { replace: true });
-    }
+    checkExistingAuth(navigate);
   }, [navigate]);
 
   const handleChange = (e) => {
@@ -47,32 +45,64 @@ const Login = () => {
     setLoading(true);
     setError('');
 
+    // Validaciones del formulario
+    const validationErrors = loginValidations.validateForm(formData.email, formData.password);
+    if (validationErrors.length > 0) {
+      setError(validationErrors[0]);
+      setLoading(false);
+      return;
+    }
+
     try {
-      console.log('🔄 Iniciando proceso de login...');
-      console.log('📧 Email:', formData.email);
-      
-      const result = await authService.login(formData.email, formData.password);
-      
-      console.log('📋 Resultado del login:', result);
+      const result = await handleLogin(formData.email, formData.password);
       
       if (result.success) {
         console.log('✅ Login exitoso');
         console.log('👤 Usuario logueado:', result.user);
         console.log('👤 Tipo de usuario normalizado:', result.user.type);
-        console.log('🔄 Redirigiendo a:', result.redirectTo);
         
-        // Redirección inmediata
-        navigate(result.redirectTo, { replace: true });
+        // Guardar resultado para mostrar en el modal
+        setLoginResult({
+          success: true,
+          user: result.user,
+          userType: result.user.type
+        });
+        setShowSuccessModal(true);
       } else {
         console.log('❌ Error en login:', result.error);
-        setError(result.error);
+        setLoginResult({
+          success: false,
+          error: result.error
+        });
+        setShowErrorModal(true);
       }
     } catch (err) {
       console.error('💥 Error en login:', err);
-      setError('Error al iniciar sesión. Por favor, intenta nuevamente.');
+      setLoginResult({
+        success: false,
+        error: 'Error al iniciar sesión. Por favor, intenta nuevamente.'
+      });
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSuccessContinue = () => {
+    setShowSuccessModal(false);
+    
+    // Redirigir según el tipo de usuario
+    const userType = authService.getUserType();
+    const finalRedirectTo = getRedirectPath(userType);
+    
+    console.log('🔄 Redirección final a:', finalRedirectTo);
+    navigate(finalRedirectTo, { replace: true });
+  };
+
+  const handleErrorContinue = () => {
+    setShowErrorModal(false);
+    // Limpiar contraseña al continuar después de error
+    setFormData(prev => ({ ...prev, password: '' }));
   };
 
   const togglePasswordVisibility = () => {
@@ -94,239 +124,37 @@ const Login = () => {
       <div style={{ height: '80px' }}></div>
 
       <Container>
-        {/* Títulos con imagen */}
-        <Row className="justify-content-center mb-4">
-          <Col md={8} lg={6}>
-            <div className="text-center">
-              <div className="mb-3">
-                <img
-                  src={loginImage}
-                  alt="Iniciar Sesión - Junimo Store"
-                  className="img-fluid"
-                  style={{
-                    maxWidth: '400px',
-                    width: '100%',
-                    filter: 'drop-shadow(3px 3px 6px rgba(0,0,0,0.8))'
-                  }}
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                    const fallbackElement = document.getElementById('fallback-title');
-                    if (fallbackElement) {
-                      fallbackElement.style.display = 'block';
-                    }
-                  }}
-                />
-              </div>
-              
-              <h2 
-                id="fallback-title"
-                className="fw-bold mb-3"
-                style={{
-                  fontFamily: "'Indie Flower', cursive",
-                  color: '#000000',
-                  fontSize: '2.5rem',
-                  textShadow: '2px 2px 4px rgba(255, 255, 255, 0.8)',
-                  display: 'none'
-                }}
-              >
-                Iniciar Sesión
-              </h2>
-              
-              <p 
-                className="fs-5"
-                style={{
-                  color: '#000000',
-                  fontWeight: '500',
-                  textShadow: '1px 1px 2px rgba(255, 255, 255, 0.7)'
-                }}
-              >
-                Ingresa a tu cuenta de Junimo Store
-              </p>
-            </div>
-          </Col>
-        </Row>
+        {/* Header con imagen */}
+        <LoginHeader />
 
         <Row className="justify-content-center">
           <Col md={8} lg={6}>
-            <Card 
-              className="shadow-lg border-3 border-dark rounded-4"
-              style={{
-                backgroundColor: '#87CEEB',
-                backdropFilter: 'blur(10px)'
-              }}
-            >
-              <Card.Body className="p-4 p-md-5">
-                {error && (
-                  <Alert 
-                    variant="danger"
-                    className="text-center border-3 border-dark rounded-3"
-                    style={{
-                      backgroundColor: '#FFB6C1',
-                      color: '#000000',
-                      fontWeight: '600'
-                    }}
-                  >
-                    {error}
-                  </Alert>
-                )}
-
-                <Form onSubmit={handleSubmit}>
-                  <Form.Group className="mb-4">
-                    <Form.Label 
-                      className="fw-semibold" 
-                      style={{ color: '#000000', fontSize: '1.1rem' }}
-                    >
-                      Correo Electrónico
-                    </Form.Label>
-                    <Form.Control
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      disabled={loading}
-                      placeholder="tu@email.com"
-                      className="border-3 border-dark rounded-3 py-3"
-                      style={{
-                        backgroundColor: '#FFFFFF',
-                        color: '#000000',
-                        fontFamily: "'Lato', sans-serif",
-                        fontSize: '1rem'
-                      }}
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-4">
-                    <Form.Label 
-                      className="fw-semibold" 
-                      style={{ color: '#000000', fontSize: '1.1rem' }}
-                    >
-                      Contraseña
-                    </Form.Label>
-                    <InputGroup>
-                      <Form.Control
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        required
-                        disabled={loading}
-                        placeholder="Tu contraseña"
-                        className="border-3 border-dark rounded-3 py-3"
-                        style={{
-                          backgroundColor: '#FFFFFF',
-                          color: '#000000',
-                          fontFamily: "'Lato', sans-serif",
-                          fontSize: '1rem'
-                        }}
-                      />
-                      <Button
-                        variant="outline-dark"
-                        className="border-3 border-dark"
-                        onClick={togglePasswordVisibility}
-                        disabled={loading}
-                        style={{
-                          backgroundColor: '#dedd8ff5',
-                          color: '#000000',
-                          minWidth: '60px'
-                        }}
-                      >
-                        {showPassword ? '👁️' : '👁️‍🗨️'}
-                      </Button>
-                    </InputGroup>
-                  </Form.Group>
-
-                  <Button 
-                    type="submit" 
-                    className="w-100 rounded-pill py-3 border-3 border-dark fw-bold mb-4"
-                    disabled={loading}
-                    style={{
-                      backgroundColor: '#dedd8ff5',
-                      color: '#000000',
-                      transition: 'all 0.3s ease',
-                      fontFamily: "'Lato', sans-serif",
-                      fontSize: '1.1rem'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!e.currentTarget.disabled) {
-                        e.target.style.transform = 'translateY(-2px)';
-                        e.target.style.boxShadow = '0 8px 20px rgba(222, 221, 143, 0.6)';
-                        e.target.style.backgroundColor = '#FFD700';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                      e.target.style.backgroundColor = '#dedd8ff5';
-                    }}
-                  >
-                    {loading ? (
-                      <>
-                        <span 
-                          className="spinner-border spinner-border-sm me-2" 
-                          role="status" 
-                          aria-hidden="true"
-                          style={{ color: '#000000' }}
-                        ></span>
-                        Iniciando sesión...
-                      </>
-                    ) : (
-                      'Iniciar Sesión'
-                    )}
-                  </Button>
-                </Form>
-
-                <hr 
-                  className="my-4" 
-                  style={{ 
-                    borderColor: '#000000', 
-                    opacity: '0.6', 
-                    borderWidth: '2px' 
-                  }} 
-                />
-
-                <div className="text-center">
-                  <p 
-                    className="mb-3"
-                    style={{ 
-                      color: '#000000',
-                      fontFamily: "'Lato', sans-serif",
-                      fontWeight: '500',
-                      fontSize: '1.1rem'
-                    }}
-                  >
-                    ¿No tienes una cuenta?
-                  </p>
-                  <Button 
-                    as={Link}
-                    to="/registro"
-                    variant="outline-dark"
-                    className="rounded-pill px-4 py-2 border-3 fw-bold"
-                    style={{
-                      backgroundColor: '#dedd8ff5',
-                      color: '#000000',
-                      transition: 'all 0.3s ease',
-                      fontFamily: "'Lato', sans-serif"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 8px 20px rgba(222, 221, 143, 0.6)';
-                      e.target.style.backgroundColor = '#FFD700';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                      e.target.style.backgroundColor = '#dedd8ff5';
-                    }}
-                  >
-                    Crear Cuenta
-                  </Button>
-                </div>
-              </Card.Body>
-            </Card>
+            <LoginForm 
+              formData={formData}
+              loading={loading}
+              error={error}
+              showPassword={showPassword}
+              onInputChange={handleChange}
+              onSubmit={handleSubmit}
+              onTogglePassword={togglePasswordVisibility}
+            />
           </Col>
         </Row>
       </Container>
+
+      {/* Modales */}
+      <SuccessModal 
+        show={showSuccessModal}
+        onHide={handleSuccessContinue}
+        user={loginResult.user}
+        userType={loginResult.userType}
+      />
+
+      <ErrorModal 
+        show={showErrorModal}
+        onHide={handleErrorContinue}
+        error={loginResult.error}
+      />
     </div>
   );
 };

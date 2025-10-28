@@ -1,35 +1,161 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Tab, Tabs } from 'react-bootstrap';
+import { Container, Row, Col, Alert, Modal, Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../utils/tienda/authService';
-import polloPerfil from '../../assets/tienda/polloperfil.png';
-import './PerfilUsuario.css';
+import { perfilValidaciones } from '../../utils/tienda/perfilValidaciones';
+import PerfilTabs from '../../components/tienda/PerfilTabs';
+import PerfilHeader from '../../components/tienda/PerfilHeader';
+import LoadingState from '../../components/tienda/LoadingState';
+import UnauthorizedState from '../../components/tienda/UnauthorizedState';
+import regionesComunasData from '../../data/regiones_comunas.json';
 
 const PerfilUsuario = () => {
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({});
+  const [errores, setErrores] = useState({});
   const [showAlert, setShowAlert] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [touched, setTouched] = useState({});
   const navigate = useNavigate();
+
+  // Función para obtener los datos completos del usuario desde app_usuarios
+  const obtenerUsuarioCompleto = (usuarioAuth) => {
+    try {
+      const usuarios = JSON.parse(localStorage.getItem('app_usuarios')) || [];
+      const usuarioCompleto = usuarios.find(u => u.run === usuarioAuth.run);
+      
+      if (usuarioCompleto) {
+        return {
+          ...usuarioAuth,
+          telefono: usuarioCompleto.telefono,
+          fecha_nacimiento: usuarioCompleto.fecha_nacimiento,
+          contrasenha: usuarioCompleto.contrasenha,
+          tipo: usuarioCompleto.tipo
+        };
+      }
+      
+      return usuarioAuth;
+    } catch (error) {
+      console.error('Error al obtener usuario completo:', error);
+      return usuarioAuth;
+    }
+  };
+
+  // Función para encontrar el ID de región por nombre
+  const encontrarIdRegionPorNombre = (nombreRegion) => {
+    if (!nombreRegion) return '';
+    
+    const regionEncontrada = regionesComunasData.regiones.find(region => {
+      const nombreRegionLower = nombreRegion.toLowerCase();
+      const regionNombreLower = region.nombre.toLowerCase();
+      
+      return (
+        regionNombreLower === nombreRegionLower ||
+        regionNombreLower.includes(nombreRegionLower) ||
+        nombreRegionLower.includes(regionNombreLower) ||
+        regionNombreLower.replace('región', '').trim() === nombreRegionLower.replace('región', '').trim()
+      );
+    });
+    
+    return regionEncontrada ? regionEncontrada.id.toString() : '';
+  };
+
+  // Función para encontrar el nombre de región por ID
+  const encontrarNombreRegionPorId = (idRegion) => {
+    if (!idRegion) return '';
+    
+    const regionEncontrada = regionesComunasData.regiones.find(region => 
+      region.id.toString() === idRegion.toString()
+    );
+    
+    return regionEncontrada ? regionEncontrada.nombre : '';
+  };
+
+  // Función para normalizar los datos del usuario al formato del formulario
+  const normalizarDatosUsuario = (usuarioCompleto) => {
+    const regionId = encontrarIdRegionPorNombre(usuarioCompleto.region);
+    const telefonoNormalizado = usuarioCompleto.telefono 
+      ? usuarioCompleto.telefono.toString() 
+      : '';
+    
+    return {
+      nombre: usuarioCompleto.nombre || '',
+      apellido: usuarioCompleto.apellidos || usuarioCompleto.apellido || '',
+      email: usuarioCompleto.correo || usuarioCompleto.email || '',
+      telefono: telefonoNormalizado,
+      direccion: usuarioCompleto.direccion || '',
+      region: regionId,
+      comuna: usuarioCompleto.comuna || ''
+    };
+  };
+
+  // Función para convertir datos del formulario al formato de almacenamiento
+  const convertirParaAlmacenamiento = (formData, usuarioOriginal) => {
+    const regionNombre = encontrarNombreRegionPorId(formData.region);
+    
+    return {
+      run: usuarioOriginal.run,
+      nombre: formData.nombre,
+      apellidos: formData.apellido,
+      correo: formData.email,
+      contrasenha: usuarioOriginal.contrasenha,
+      telefono: formData.telefono ? parseInt(formData.telefono) || 0 : 0,
+      fecha_nacimiento: usuarioOriginal.fecha_nacimiento,
+      tipo: usuarioOriginal.tipo,
+      region: regionNombre,
+      comuna: formData.comuna,
+      direccion: formData.direccion
+    };
+  };
+
+  // Validar campo individual
+  const validarCampo = (name, value) => {
+    let error = '';
+    
+    switch (name) {
+      case 'nombre':
+      case 'apellido':
+        error = perfilValidaciones.validarNombre(value);
+        break;
+      case 'email':
+        error = perfilValidaciones.validarEmail(value, user);
+        break;
+      case 'telefono':
+        error = perfilValidaciones.validarTelefono(value);
+        break;
+      case 'direccion':
+        error = perfilValidaciones.validarDireccion(value);
+        break;
+      case 'region':
+        error = perfilValidaciones.validarRegion(value);
+        break;
+      case 'comuna':
+        error = perfilValidaciones.validarComuna(value, formData.region);
+        break;
+      default:
+        break;
+    }
+    
+    return error;
+  };
 
   useEffect(() => {
     const checkAuth = () => {
       try {
         const currentUser = authService.getCurrentUser();
-        console.log('Usuario actual:', currentUser);
         
         if (!currentUser) {
           navigate('/login');
           return;
         }
         
-        setUser(currentUser);
-        setFormData({
-          nombre: currentUser.nombre || '',
-          apellido: currentUser.apellido || '',
-          email: currentUser.email || '',
-          telefono: currentUser.telefono || ''
-        });
+        const usuarioCompleto = obtenerUsuarioCompleto(currentUser);
+        setUser(usuarioCompleto);
+        
+        const datosNormalizados = normalizarDatosUsuario(usuarioCompleto);
+        setFormData(datosNormalizados);
+        
       } catch (error) {
         console.error('Error al cargar perfil:', error);
         navigate('/login');
@@ -43,223 +169,256 @@ const PerfilUsuario = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-  };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    try {
-      console.log('Datos a actualizar:', formData);
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 3000);
-    } catch (error) {
-      console.error('Error al actualizar perfil:', error);
+    if (touched[name]) {
+      const error = validarCampo(name, value);
+      setErrores(prev => ({
+        ...prev,
+        [name]: error
+      }));
     }
   };
 
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    
+    const error = validarCampo(name, value);
+    setErrores(prev => ({
+      ...prev,
+      [name]: error
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const todosLosCampos = {
+      nombre: true,
+      apellido: true,
+      email: true,
+      telefono: true,
+      direccion: true,
+      region: true,
+      comuna: true
+    };
+    setTouched(todosLosCampos);
+    
+    const validacion = perfilValidaciones.validarFormularioCompleto(formData, user);
+    setErrores(validacion.errores);
+    
+    if (!validacion.esValido) {
+      console.log('❌ Errores de validación:', validacion.errores);
+      
+      const primerError = Object.keys(validacion.errores).find(key => validacion.errores[key]);
+      if (primerError) {
+        const elementoError = document.querySelector(`[name="${primerError}"]`);
+        if (elementoError) {
+          elementoError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          elementoError.focus();
+        }
+      }
+      
+      return;
+    }
+    
+    try {
+      console.log('💾 Guardando cambios válidos...', formData);
+      
+      const usuarios = JSON.parse(localStorage.getItem('app_usuarios')) || [];
+      const usuarioIndex = usuarios.findIndex(u => u.run === user.run);
+      
+      if (usuarioIndex === -1) {
+        console.error('❌ Usuario no encontrado en app_usuarios');
+        return;
+      }
+      
+      const usuarioOriginal = usuarios[usuarioIndex];
+      const usuarioActualizado = convertirParaAlmacenamiento(formData, usuarioOriginal);
+      
+      usuarios[usuarioIndex] = usuarioActualizado;
+      localStorage.setItem('app_usuarios', JSON.stringify(usuarios));
+      
+      const usuarioSesionActualizado = {
+        ...usuarioActualizado,
+        id: usuarioActualizado.run,
+        apellido: usuarioActualizado.apellidos,
+        email: usuarioActualizado.correo,
+        type: usuarioActualizado.tipo
+      };
+      localStorage.setItem('auth_user', JSON.stringify(usuarioSesionActualizado));
+      
+      const usuarioCompletoActualizado = obtenerUsuarioCompleto(usuarioSesionActualizado);
+      setUser(usuarioCompletoActualizado);
+      
+      // Mostrar modal de éxito en lugar del alert
+      setShowSuccessModal(true);
+      
+      console.log('✅ Perfil actualizado exitosamente');
+      
+    } catch (error) {
+      console.error('💥 Error al actualizar perfil:', error);
+    }
+  };
+
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+  };
+
   if (loading) {
-    return (
-      <div className="perfil-page">
-        <div className="navbar-spacer"></div>
-        <Container className="py-5 text-center">
-          <div className="loading-perfil">
-            <span className="loading-icon">🌾</span>
-            <h4 className="text-white mt-3">Cargando perfil...</h4>
-          </div>
-        </Container>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (!user) {
-    return (
-      <div className="perfil-page">
-        <div className="navbar-spacer"></div>
-        <Container className="py-5 text-center">
-          <div className="no-user">
-            <span className="no-user-icon">🔒</span>
-            <h4 className="text-white mt-3">No has iniciado sesión</h4>
-            <p className="text-white">Por favor inicia sesión para acceder a tu perfil</p>
-            <Button 
-              variant="warning" 
-              onClick={() => navigate('/login')}
-              className="mt-3"
-            >
-              Iniciar Sesión
-            </Button>
-          </div>
-        </Container>
-      </div>
-    );
+    return <UnauthorizedState navigate={navigate} />;
   }
 
   return (
-    <div className="perfil-page">
-      <div className="navbar-spacer"></div>
+    <div 
+      className="min-vh-100 w-100"
+      style={{
+        backgroundImage: 'url("https://images3.alphacoders.com/126/1269904.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        fontFamily: "'Lato', sans-serif"
+      }}
+    >
+      <div style={{ height: '80px' }}></div>
       
       <Container className="py-4">
         <Row className="mb-4">
           <Col>
-            <h1 className="page-title">
-              <img src={polloPerfil} alt="Perfil" style={{width: '50px', height: '50px', marginRight: '15px'}} />
-              Mi Perfil
-            </h1>
-            <p className="page-subtitle">
-              Gestiona tu información personal y preferencias
-            </p>
+            <PerfilHeader />
           </Col>
         </Row>
 
         {showAlert && (
-          <Alert variant="success" className="mb-4">
+          <Alert 
+            variant="success" 
+            className="mb-4 text-center border-3 border-dark rounded-4"
+            style={{
+              backgroundColor: '#87CEEB',
+              color: '#000000',
+              fontWeight: '600'
+            }}
+          >
             ✅ Perfil actualizado correctamente
           </Alert>
         )}
 
-        <Tabs defaultActiveKey="perfil" className="mb-4 profile-tabs">
-          <Tab eventKey="perfil" title="📝 Información Personal">
-            <Card className="profile-card">
-              <Card.Body>
-                <Form onSubmit={handleSubmit}>
-                  <Row>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Nombre</Form.Label>
-                        <Form.Control
-                          type="text"
-                          name="nombre"
-                          value={formData.nombre || ''}
-                          onChange={handleInputChange}
-                          required
-                          className="profile-input"
-                        />
-                      </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                      <Form.Group className="mb-3">
-                        <Form.Label>Apellido</Form.Label>
-                        <Form.Control
-                          type="text"
-                          name="apellido"
-                          value={formData.apellido || ''}
-                          onChange={handleInputChange}
-                          required
-                          className="profile-input"
-                        />
-                      </Form.Group>
-                    </Col>
-                  </Row>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Email</Form.Label>
-                    <Form.Control
-                      type="email"
-                      name="email"
-                      value={formData.email || ''}
-                      onChange={handleInputChange}
-                      required
-                      className="profile-input"
-                    />
-                  </Form.Group>
-
-                  <Form.Group className="mb-3">
-                    <Form.Label>Teléfono</Form.Label>
-                    <Form.Control
-                      type="tel"
-                      name="telefono"
-                      value={formData.telefono || ''}
-                      onChange={handleInputChange}
-                      className="profile-input"
-                      placeholder="+56 9 1234 5678"
-                    />
-                  </Form.Group>
-
-                  <Button variant="primary" type="submit" className="save-btn">
-                    💾 Guardar Cambios
-                  </Button>
-                </Form>
-              </Card.Body>
-            </Card>
-          </Tab>
-
-          <Tab eventKey="seguridad" title="🔒 Seguridad">
-            <Card className="profile-card">
-              <Card.Body>
-                <h5 className="section-title">Cambiar Contraseña</h5>
-                <Form>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Contraseña Actual</Form.Label>
-                    <Form.Control 
-                      type="password" 
-                      className="profile-input"
-                      placeholder="Ingresa tu contraseña actual"
-                    />
-                  </Form.Group>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Nueva Contraseña</Form.Label>
-                    <Form.Control 
-                      type="password" 
-                      className="profile-input"
-                      placeholder="Ingresa tu nueva contraseña"
-                    />
-                  </Form.Group>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Confirmar Nueva Contraseña</Form.Label>
-                    <Form.Control 
-                      type="password" 
-                      className="profile-input"
-                      placeholder="Confirma tu nueva contraseña"
-                    />
-                  </Form.Group>
-                  <Button variant="warning" className="save-btn">
-                    🔑 Actualizar Contraseña
-                  </Button>
-                </Form>
-              </Card.Body>
-            </Card>
-          </Tab>
-
-          <Tab eventKey="preferencias" title="⚙️ Preferencias">
-            <Card className="profile-card">
-              <Card.Body>
-                <h5 className="section-title">Configuración de Notificaciones</h5>
-                <Form>
-                  <div className="preference-item">
-                    <Form.Check
-                      type="switch"
-                      id="email-notifications"
-                      label="Recibir notificaciones por email"
-                      defaultChecked
-                      className="preference-switch"
-                    />
-                  </div>
-                  <div className="preference-item">
-                    <Form.Check
-                      type="switch"
-                      id="promo-notifications"
-                      label="Recibir promociones y ofertas"
-                      defaultChecked
-                      className="preference-switch"
-                    />
-                  </div>
-                  <div className="preference-item">
-                    <Form.Check
-                      type="switch"
-                      id="order-updates"
-                      label="Actualizaciones de pedidos"
-                      defaultChecked
-                      className="preference-switch"
-                    />
-                  </div>
-                </Form>
-              </Card.Body>
-            </Card>
-          </Tab>
-        </Tabs>
+        <PerfilTabs 
+          formData={formData}
+          onInputChange={handleInputChange}
+          onBlur={handleBlur}
+          onSubmit={handleSubmit}
+          errores={errores}
+        />
       </Container>
+
+      {/* Modal de éxito */}
+      <Modal
+        show={showSuccessModal}
+        onHide={handleCloseSuccessModal}
+        centered
+        size="lg"
+        style={{ fontFamily: "'Lato', sans-serif" }}
+      >
+        <Modal.Header 
+          className="border-3 border-dark"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <Modal.Title className="fw-bold text-center w-100" style={{ color: '#000000' }}>
+            <span style={{ fontFamily: "'Indie Flower', cursive", fontSize: '1.8rem' }}>
+              ✅ ¡Perfil Actualizado!
+            </span>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body
+          className="text-center py-4"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <div className="mb-4">
+            <div 
+              className="display-1 mb-3"
+              style={{ color: '#000000' }}
+            >
+              🎉
+            </div>
+            <h4 
+              className="fw-bold mb-3"
+              style={{ 
+                color: '#000000',
+                fontFamily: "'Indie Flower', cursive"
+              }}
+            >
+              ¡Cambios Guardados Exitosamente!
+            </h4>
+            <p 
+              className="fs-5"
+              style={{ 
+                color: '#000000',
+                fontWeight: '500'
+              }}
+            >
+              Tu información personal ha sido actualizada correctamente.
+            </p>
+            <p 
+              className="fs-6"
+              style={{ 
+                color: '#000000',
+                fontWeight: '400'
+              }}
+            >
+              Los cambios se han aplicado a tu perfil y estarán disponibles inmediatamente.
+            </p>
+          </div>
+        </Modal.Body>
+        <Modal.Footer
+          className="border-3 border-dark justify-content-center"
+          style={{
+            backgroundColor: '#87CEEB',
+          }}
+        >
+          <Button 
+            variant="primary" 
+            onClick={handleCloseSuccessModal}
+            className="rounded-pill px-5 py-2 border-3 border-dark fw-bold"
+            style={{
+              backgroundColor: '#dedd8ff5',
+              color: '#000000',
+              transition: 'all 0.3s ease',
+              fontFamily: "'Lato', sans-serif",
+              fontSize: '1.1rem'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 8px 20px rgba(222, 221, 143, 0.6)';
+              e.target.style.backgroundColor = '#FFD700';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+              e.target.style.backgroundColor = '#dedd8ff5';
+            }}
+          >
+            Continuar
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

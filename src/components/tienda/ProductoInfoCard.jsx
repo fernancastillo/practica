@@ -1,4 +1,3 @@
-// src/components/tienda/ProductoInfoCard.jsx
 import React, { useState, useEffect } from 'react';
 import { Card, Badge, Form, Button, Row, Col, Alert } from 'react-bootstrap';
 import { getProductosConStockActual } from '../../utils/tienda/stockService';

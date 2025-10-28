@@ -1,8 +1,5 @@
-// src/components/tienda/HeaderNosotros.jsx
 import React from 'react';
 import { Row, Col } from 'react-bootstrap';
-
-// Importar la imagen del header
 import nosotrosImage from '../../assets/tienda/nosotros.png';
 
 const HeaderNosotros = () => {

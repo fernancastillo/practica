@@ -40,20 +40,23 @@ export const registroService = {
       // Obtener nombre de la región
       const regionSeleccionada = usuarioData.regionNombre || 'Región no especificada';
       
-      // Crear nuevo usuario con la estructura EXACTA del JSON (sin campos adicionales)
+      // ✅ CORREGIDO: Incluir la contraseña para poder autenticarse después
       const nuevoUsuario = {
         run: usuarioData.run,
         nombre: usuarioData.nombre,
         apellidos: `${usuarioData.apellido}`,
         correo: usuarioData.email,
-        // NO incluir contraseña en el localStorage por seguridad
+        // ✅ AGREGADO: Incluir contraseña para autenticación
+        contrasenha: usuarioData.password,
         telefono: usuarioData.fono ? parseInt(usuarioData.fono) : null,
         fecha_nacimiento: usuarioData.fechaNacimiento,
         tipo: 'Cliente',
-        region: regionSeleccionada, // Usar el nombre de la región
+        region: regionSeleccionada,
         comuna: usuarioData.comuna,
-        direccion: usuarioData.direccion
-        // Eliminados: activo, descuento, esDuoc, fechaRegistro
+        direccion: usuarioData.direccion,
+        // ✅ AGREGADO: Campos adicionales para consistencia
+        activo: true,
+        fechaRegistro: new Date().toISOString().split('T')[0] // Fecha actual en formato YYYY-MM-DD
       };
 
       console.log('👤 Nuevo usuario a guardar:', nuevoUsuario);
@@ -65,6 +68,10 @@ export const registroService = {
       // Verificar que realmente se guardó
       const usuariosActualizados = dataService.getUsuarios();
       console.log('📊 Total de usuarios después del registro:', usuariosActualizados.length);
+      
+      // ✅ VERIFICAR: Buscar el usuario recién guardado
+      const usuarioVerificado = usuariosActualizados.find(u => u.correo === usuarioData.email);
+      console.log('🔍 Usuario verificado en localStorage:', usuarioVerificado);
       
       return {
         success: true,

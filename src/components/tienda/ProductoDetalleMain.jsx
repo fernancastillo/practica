@@ -1,4 +1,3 @@
-// src/components/tienda/ProductoDetalleMain.jsx
 import React from 'react';
 import { Row, Col } from 'react-bootstrap';
 import ProductoImageCard from './ProductoImageCard';

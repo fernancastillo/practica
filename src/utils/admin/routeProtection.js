@@ -5,7 +5,24 @@ import { authService } from '../tienda/auth';
  * @returns {boolean} true si puede acceder, false si no
  */
 export const canAccessAdmin = () => {
-  return authService.isAuthenticated() && authService.isAdmin();
+  if (!authService.isAuthenticated()) {
+    return false;
+  }
+  
+  const currentUser = authService.getCurrentUser();
+  console.log('🔍 Verificando acceso admin para usuario:', currentUser);
+  
+  // ✅ CORREGIDO: Verificar múltiples tipos de admin
+  const userType = currentUser?.tipo || currentUser?.type || '';
+  const isAdmin = userType === 'Admin' || 
+                  userType === 'Administrador' || 
+                  userType === 'admin' ||
+                  userType === 'administrador';
+  
+  console.log('👤 Tipo de usuario:', userType);
+  console.log('🔑 Es admin:', isAdmin);
+  
+  return isAdmin;
 };
 
 /**
@@ -14,11 +31,24 @@ export const canAccessAdmin = () => {
  */
 export const getRedirectRoute = () => {
   if (!authService.isAuthenticated()) {
+    console.log('🔐 Usuario no autenticado, redirigiendo a login');
     return '/login';
   }
-  if (!authService.isAdmin()) {
+  
+  const currentUser = authService.getCurrentUser();
+  const userType = currentUser?.tipo || currentUser?.type || '';
+  const isAdmin = userType === 'Admin' || 
+                  userType === 'Administrador' || 
+                  userType === 'admin' ||
+                  userType === 'administrador';
+  
+  if (!isAdmin) {
+    console.log('🚫 Usuario no es admin, redirigiendo a index');
+    console.log('👤 Tipo de usuario detectado:', userType);
     return '/index';
   }
+  
+  console.log('✅ Usuario es admin, permitiendo acceso');
   return null; // No redirigir, puede acceder
 };
 
@@ -33,6 +63,6 @@ export const useAdminAccess = () => {
     canAccess,
     redirectTo,
     isAuthenticated: authService.isAuthenticated(),
-    isAdmin: authService.isAdmin()
+    isAdmin: canAccess
   };
 };

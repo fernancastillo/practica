@@ -1,4 +1,3 @@
-// src/components/tienda/ProductCard.jsx
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { formatearPrecio, categoryIcons } from '../../utils/tienda/tiendaUtils';

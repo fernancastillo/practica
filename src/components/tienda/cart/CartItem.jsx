@@ -1,4 +1,3 @@
-// src/components/tienda/cart/CartItem.jsx
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Form, Button, Badge, Modal } from 'react-bootstrap';
 

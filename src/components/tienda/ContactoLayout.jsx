@@ -1,4 +1,3 @@
-// src/components/tienda/ContactoLayout.jsx
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
 import { ContactoForm } from './ContactoForm';
 import { useContactoLogic } from './ContactoLogic';

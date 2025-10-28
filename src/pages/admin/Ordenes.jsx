@@ -1,5 +1,4 @@
-// src/pages/admin/Ordenes.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import OrdenesStats from '../../components/admin/OrdenesStats';
 import OrdenesFiltros from '../../components/admin/OrdenesFiltros';
 import OrdenesTable from '../../components/admin/OrdenesTable';
@@ -27,18 +26,42 @@ const Ordenes = () => {
 
   const [showReporteModal, setShowReporteModal] = useState(false);
 
-const handleGenerarReporte = (formato) => {
-  if (formato === 'csv') {
-    // Mostrar modal para que el usuario elija CSV o CSV Excel
-    setShowReporteModal(true);
-  } else if (formato === 'json') {
-    // Generar directamente el JSON
-    generarReporteOrdenes('json', ordenesFiltradas);
-  } else {
-    // Cualquier otro formato (por compatibilidad futura)
-    generarReporteOrdenes(formato, ordenesFiltradas);
-  }
-};
+  // Aplicar el fondo al body
+  useEffect(() => {
+    document.body.style.backgroundImage = 'url("https://images3.alphacoders.com/126/1269904.png")';
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundAttachment = 'fixed';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.minHeight = '100vh';
+    
+    // Limpiar cuando el componente se desmonte
+    return () => {
+      document.body.style.backgroundImage = '';
+      document.body.style.backgroundSize = '';
+      document.body.style.backgroundPosition = '';
+      document.body.style.backgroundRepeat = '';
+      document.body.style.backgroundAttachment = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+      document.body.style.minHeight = '';
+    };
+  }, []);
+
+  const handleGenerarReporte = (formato) => {
+    if (formato === 'csv') {
+      // Mostrar modal para que el usuario elija CSV o CSV Excel
+      setShowReporteModal(true);
+    } else if (formato === 'json') {
+      // Generar directamente el JSON
+      generarReporteOrdenes('json', ordenesFiltradas);
+    } else {
+      // Cualquier otro formato (por compatibilidad futura)
+      generarReporteOrdenes(formato, ordenesFiltradas);
+    }
+  };
 
   const handleSeleccionFormato = (formato) => {
     // CORREGIDO: Usar el nuevo orden de parámetros
@@ -48,9 +71,9 @@ const handleGenerarReporte = (formato) => {
 
   if (loading) {
     return (
-      <div className="container-fluid">
-        <div className="d-flex justify-content-center align-items-center" style={{ height: '50vh' }}>
-          <div className="spinner-border text-primary" role="status">
+      <div className="container-fluid" style={{ padding: '20px', minHeight: '100vh' }}>
+        <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+          <div className="spinner-border text-white" role="status">
             <span className="visually-hidden">Cargando...</span>
           </div>
         </div>
@@ -59,20 +82,22 @@ const handleGenerarReporte = (formato) => {
   }
 
   return (
-    <div className="container-fluid">
+    <div className="container-fluid" style={{ padding: '20px', minHeight: '100vh' }}>
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1 className="h3 mb-0 text-gray-800">Gestión de Órdenes</h1>
+        <h1 className="h3 mb-0 text-white fw-bold" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.7)' }}>
+          Gestión de Órdenes
+        </h1>
         <div className="d-flex flex-wrap gap-2">
           <button
-            className="btn btn-primary"
+            className="btn btn-primary shadow"
             onClick={() => handleGenerarReporte('csv')}
           >
             <i className="bi bi-file-earmark-spreadsheet me-2"></i>
             Reporte CSV
           </button>
           <button
-            className="btn btn-warning"
+            className="btn btn-warning shadow"
             onClick={() => handleGenerarReporte('json')}
           >
             <i className="bi bi-file-code me-2"></i>

@@ -68,6 +68,24 @@ const Footer = () => {
                 </li>
                 <li className="mb-2">
                   <Link 
+                    to="/categorias" 
+                    className="footer-link"
+                    onClick={() => handleLinkClick('/categorias')}
+                  >
+                    Categorías
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link 
+                    to="/ofertas" 
+                    className="footer-link"
+                    onClick={() => handleLinkClick('/ofertas')}
+                  >
+                    Ofertas
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link 
                     to="/carrito" 
                     className="footer-link"
                     onClick={() => handleLinkClick('/carrito')}

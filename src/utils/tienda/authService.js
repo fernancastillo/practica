@@ -30,8 +30,14 @@ export const authService = {
         console.log('👤 Datos completos del usuario:', usuarioRegistrado);
         
         // ✅ CORREGIDO: Normalizar el tipo de usuario
-        const tipoUsuario = usuarioRegistrado.tipo === 'Admin' ? 'Administrador' : usuarioRegistrado.tipo;
-        console.log('👤 Tipo de usuario normalizado:', tipoUsuario);
+// Normaliza el tipo de usuario sin importar mayúsculas/minúsculas
+const tipoUsuario = (() => {
+  const tipo = (usuarioRegistrado.tipo || '').toLowerCase();
+  if (tipo === 'admin' || tipo === 'administrador') return 'Administrador';
+  if (tipo === 'cliente') return 'Cliente';
+  return usuarioRegistrado.tipo;
+})();
+
         
         const userData = {
           id: usuarioRegistrado.run,
@@ -150,12 +156,11 @@ export const authService = {
     return loadFromLocalstorage(USER_TYPE_KEY);
   },
 
-  isAdmin: () => {
-    const userType = loadFromLocalstorage(USER_TYPE_KEY);
-    console.log('🔍 Verificando si es admin - userType:', userType);
-    // ✅ CORREGIDO: Verificar tanto "Admin" como "Administrador"
-    return userType === 'Administrador' || userType === 'Admin';
-  },
+ isAdmin: () => {
+  const userType = getLocalstorage(USER_TYPE_KEY);
+  return (userType || '').toLowerCase() === 'admin' || (userType || '').toLowerCase() === 'administrador';
+},
+
 
   isClient: () => {
     const userType = loadFromLocalstorage(USER_TYPE_KEY);

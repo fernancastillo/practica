@@ -1,5 +1,3 @@
-// src/components/tienda/Filters.jsx
-
 import React from 'react';
 import { Row, Col, Form, Button, Badge } from 'react-bootstrap';
 import { categoryIcons } from '../../utils/tienda/tiendaUtils';

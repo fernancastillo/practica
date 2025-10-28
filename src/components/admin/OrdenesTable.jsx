@@ -1,4 +1,3 @@
-// src/components/admin/OrdenesTable.jsx
 import { formatCurrency, formatDate } from '../../utils/admin/dashboardUtils';
 
 const OrdenesTable = ({ ordenes, onEdit, onDelete, onUpdateEstado }) => {

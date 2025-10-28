@@ -1,4 +1,3 @@
-// src/components/tienda/ImagenNosotros.jsx
 import React from 'react';
 
 const ImagenNosotros = ({ src, alt, maxWidth = '220px', height = '160px', className = '' }) => {

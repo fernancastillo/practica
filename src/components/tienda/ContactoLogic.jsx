@@ -1,4 +1,3 @@
-// src/components/tienda/ContactoLogic.jsx
 import { useState } from 'react';
 import { 
   validarFormularioContacto, 
