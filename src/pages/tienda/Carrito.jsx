@@ -7,8 +7,8 @@ import { cartService } from '../../utils/tienda/cartService';
 import CartItem from '../../components/tienda/cart/CartItem';
 import CartSummary from '../../components/tienda/cart/CartSummary';
 import EmptyCart from '../../components/tienda/cart/EmptyCart';
-
-// Importar la imagen del carrito
+import { orderCreationService } from '../../utils/tienda/orderCreationService';
+import PaymentSuccessModal from '../../components/tienda/PaymentSuccessModal';
 import carritoImage from '../../assets/tienda/carrito.png';
 
 const Carrito = () => {
@@ -16,6 +16,12 @@ const Carrito = () => {
   const [user, setUser] = useState(null);
   const [showAlert, setShowAlert] = useState(false);
   const [showClearCartModal, setShowClearCartModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [orderData, setOrderData] = useState({
+    orderNumber: '',
+    total: 0,
+    transactionId: ''
+  });
   const navigate = useNavigate();
 
   // Cargar carrito desde localStorage
@@ -105,33 +111,60 @@ const Carrito = () => {
     setShowClearCartModal(false);
   };
 
-  // Finalizar compra
-  const handleCheckout = (totalFinal) => {
+  // ✅ FUNCIÓN ACTUALIZADA DE CHECKOUT
+  const handleCheckout = (totalFinal, discountCode = '', paymentData = null) => {
     if (!user) {
       navigate('/login');
       return;
     }
 
     try {
-      console.log('✅ Compra realizada. Total final:', totalFinal);
+      console.log('✅ Procesando compra...');
+      console.log('💰 Total final:', totalFinal);
+      if (discountCode) {
+        console.log('🎫 Código de descuento:', discountCode);
+      }
+      if (paymentData) {
+        console.log('💳 Datos de pago:', paymentData.transactionId);
+      }
+
+      // 1. CREAR NUEVA ORDEN usando orderCreationService
+      const nuevaOrden = orderCreationService.createOrder(user, cartItems, totalFinal, discountCode, paymentData);
+      console.log('📦 Nueva orden creada:', nuevaOrden);
+
+      // 2. GUARDAR ORDEN EN LOCALSTORAGE
+      const ordenGuardada = orderCreationService.saveOrder(nuevaOrden);
       
-      // Procesar checkout con el total final
+      if (!ordenGuardada) {
+        throw new Error('No se pudo guardar la orden');
+      }
+
+      // 3. ACTUALIZAR STOCK (procesar checkout)
       cartService.processCheckout(cartItems, totalFinal);
-      
-      // Vaciar carrito
+
+      // 4. VACIAR CARRITO
       cartService.clearCart();
       setCartItems([]);
       window.dispatchEvent(new Event('cartUpdated'));
-      
-      // Mostrar alerta de éxito
-      setShowAlert(true);
-      setTimeout(() => {
-        navigate('/pedidos');
-      }, 2000);
-      
+
+      // 5. MOSTRAR MODAL DE ÉXITO con datos válidos
+      setOrderData({
+        orderNumber: nuevaOrden.numeroOrden || 'N/A',
+        total: totalFinal || 0,
+        transactionId: paymentData?.transactionId || 'N/A'
+      });
+      setShowSuccessModal(true);
+
     } catch (error) {
-      console.error('Error en checkout:', error);
+      console.error('❌ Error en checkout:', error);
+      alert('Error al procesar la compra: ' + error.message);
     }
+  };
+
+  // ✅ CERRAR MODAL DE ÉXITO Y REDIRIGIR
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    navigate('/pedidos');
   };
 
   const total = cartService.calculateTotal(cartItems);
@@ -328,6 +361,15 @@ const Carrito = () => {
           </Col>
         </Row>
       </Container>
+
+      {/* Modal de éxito de pago */}
+      <PaymentSuccessModal
+        show={showSuccessModal}
+        onHide={handleSuccessModalClose}
+        orderNumber={orderData.orderNumber}
+        total={orderData.total}
+        transactionId={orderData.transactionId}
+      />
 
       {/* Modal de confirmación para vaciar carrito */}
       <Modal

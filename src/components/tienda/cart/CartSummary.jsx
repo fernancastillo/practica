@@ -1,9 +1,18 @@
-import React from 'react';
-import { Card, Button, Alert, Badge } from 'react-bootstrap';
+// src/components/tienda/cart/CartSummary.jsx
+import React, { useState } from 'react';
+import { Card, Button, Alert, Badge, Form, InputGroup } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { cartService } from '../../../utils/tienda/cartService';
+import PaymentConfirmationModal from '../PaymentConfirmationModal';
+import CreditCardModal from '../CreditCardModal';
 
 const CartSummary = ({ cartItems, total, onCheckout, user }) => {
+  const [discountCode, setDiscountCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState(null);
+  const [discountError, setDiscountError] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showCreditCardModal, setShowCreditCardModal] = useState(false);
+
   const hasLowStock = cartItems.some(item => {
     const stockReal = JSON.parse(localStorage.getItem('app_productos'))?.find(p => p.codigo === item.codigo)?.stock || item.stock;
     return item.cantidad > stockReal;
@@ -23,212 +32,324 @@ const CartSummary = ({ cartItems, total, onCheckout, user }) => {
   // Calcular subtotal (sin envío)
   const subtotal = total;
   
+  // Calcular descuento por código
+  const codeDiscount = appliedDiscount ? cartService.calculateDiscount(subtotal, appliedDiscount.code) : 0;
+  
   // Calcular total final
-  const totalFinal = cartService.calculateFinalTotal(total, envio, duocDiscount);
+  const totalFinal = cartService.calculateFinalTotal(subtotal, envio, duocDiscount, appliedDiscount?.code);
+
+  // Aplicar código de descuento
+  const handleApplyDiscount = () => {
+    if (!discountCode.trim()) {
+      setDiscountError('Por favor ingresa un código de descuento');
+      return;
+    }
+
+    const discountInfo = cartService.validateDiscountCode(discountCode);
+    if (discountInfo) {
+      setAppliedDiscount({
+        code: discountCode,
+        info: discountInfo
+      });
+      setDiscountError('');
+    } else {
+      setDiscountError('Código de descuento inválido');
+      setAppliedDiscount(null);
+    }
+  };
+
+  // Remover código de descuento
+  const handleRemoveDiscount = () => {
+    setAppliedDiscount(null);
+    setDiscountCode('');
+    setDiscountError('');
+  };
+
+  // Abrir modal de confirmación de pago
+  const handleOpenPaymentModal = () => {
+    console.log('🔍 CartSummary - Abriendo modal de pago');
+    setShowPaymentModal(true);
+  };
+
+  // Continuar al pago con tarjeta
+  const handleContinueToPayment = () => {
+    console.log('🔍 CartSummary - Continuando a pago con tarjeta');
+    setShowPaymentModal(false);
+    setShowCreditCardModal(true);
+  };
+
+  // Procesar pago exitoso
+  const handlePaymentSuccess = (paymentData) => {
+    console.log('🔍 CartSummary - Pago exitoso, llamando onCheckout');
+    setShowCreditCardModal(false);
+    onCheckout(totalFinal, appliedDiscount?.code, paymentData);
+  };
 
   return (
-    <Card 
-      className="shadow-lg border-3 border-dark rounded-4"
-      style={{
-        backgroundColor: '#87CEEB',
-        fontFamily: "'Lato', sans-serif"
-      }}
-    >
-      <Card.Header 
-        className="border-3 border-dark rounded-top-4"
+    <>
+      <Card 
+        className="shadow-lg border-3 border-dark rounded-4"
         style={{
-          background: 'linear-gradient(135deg, #87CEEB, #5F9EA0)',
+          backgroundColor: '#87CEEB',
+          fontFamily: "'Lato', sans-serif"
         }}
       >
-        <h5 
-          className="mb-0 text-center fw-bold"
+        <Card.Header 
+          className="border-3 border-dark rounded-top-4"
           style={{
-            fontFamily: "'Indie Flower', cursive",
-            color: '#000000',
-            fontSize: '1.5rem',
+            background: 'linear-gradient(135deg, #87CEEB, #5F9EA0)',
           }}
         >
-          Resumen del Pedido
-        </h5>
-      </Card.Header>
-      
-      <Card.Body>
-        {hasLowStock && (
-          <Alert 
-            variant="warning" 
-            className="small border-3 border-dark rounded-3"
+          <h5 
+            className="mb-0 text-center fw-bold"
             style={{
-              backgroundColor: '#dedd8ff5',
+              fontFamily: "'Indie Flower', cursive",
               color: '#000000',
-              fontWeight: '600'
+              fontSize: '1.5rem',
             }}
           >
-            ⚠️ Algunos productos tienen stock limitado
-          </Alert>
-        )}
-
-        {hasDuocDiscount && (
-          <Alert 
-            variant="info" 
-            className="small border-3 border-dark rounded-3"
-            style={{
-              backgroundColor: '#90EE90',
-              color: '#000000',
-              fontWeight: '600'
-            }}
-          >
-            🎓 ¡Descuento DUOC activado! 20% de descuento adicional
-          </Alert>
-        )}
+            Resumen del Pedido
+          </h5>
+        </Card.Header>
         
-        <div 
-          className="d-flex justify-content-between mb-2 fw-semibold"
-          style={{ color: '#000000' }}
-        >
-          <span>Productos ({cartItems.reduce((sum, item) => sum + item.cantidad, 0)})</span>
-          <span style={{ color: '#000000' }}>${subtotal.toLocaleString('es-CL')}</span>
-        </div>
+        <Card.Body>
+          {hasLowStock && (
+            <Alert 
+              variant="warning" 
+              className="small border-3 border-dark rounded-3"
+              style={{
+                backgroundColor: '#dedd8ff5',
+                color: '#000000',
+                fontWeight: '600'
+              }}
+            >
+              ⚠️ Algunos productos tienen stock limitado
+            </Alert>
+          )}
 
-        {/* Descuento DUOC */}
-        {hasDuocDiscount && (
+          {hasDuocDiscount && (
+            <Alert 
+              variant="info" 
+              className="small border-3 border-dark rounded-3"
+              style={{
+                backgroundColor: '#90EE90',
+                color: '#000000',
+                fontWeight: '600'
+              }}
+            >
+              🎓 ¡Descuento DUOC activado! 20% de descuento adicional
+            </Alert>
+          )}
+          
+          {/* Campo para código de descuento */}
+          <div className="mb-3">
+            <label 
+              className="form-label fw-bold mb-2"
+              style={{ color: '#000000' }}
+            >
+              💰 Código de Descuento
+            </label>
+            {!appliedDiscount ? (
+              <InputGroup>
+                <Form.Control
+                  type="text"
+                  placeholder="Ingresa código ej: SV2500"
+                  value={discountCode}
+                  onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                  className="border-3 border-dark fw-bold"
+                  style={{ 
+                    color: '#000000',
+                    backgroundColor: '#FFFFFF'
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleApplyDiscount();
+                    }
+                  }}
+                />
+                <Button 
+                  variant="outline-dark"
+                  className="border-3 border-dark fw-bold"
+                  style={{
+                    backgroundColor: '#dedd8ff5',
+                    color: '#000000'
+                  }}
+                  onClick={handleApplyDiscount}
+                >
+                  Aplicar
+                </Button>
+              </InputGroup>
+            ) : (
+              <div className="d-flex justify-content-between align-items-center p-2 rounded-3 border-3 border-success"
+                style={{
+                  backgroundColor: '#90EE90',
+                  color: '#000000'
+                }}
+              >
+                <div>
+                  <Badge bg="success" className="me-2 border-2 border-dark" style={{ backgroundColor: '#28a745', color: '#FFFFFF' }}>
+                    ✅
+                  </Badge>
+                  <span className="fw-bold">{appliedDiscount.code}</span> - {appliedDiscount.info.description}
+                </div>
+                <Button 
+                  variant="outline-danger" 
+                  size="sm"
+                  className="border-2 border-dark"
+                  style={{
+                    backgroundColor: '#dedd8ff5',
+                    color: '#000000'
+                  }}
+                  onClick={handleRemoveDiscount}
+                >
+                  ✕
+                </Button>
+              </div>
+            )}
+            {discountError && (
+              <div 
+                className="text-danger small mt-1 fw-bold"
+                style={{ color: '#dc3545' }}
+              >
+                ❌ {discountError}
+              </div>
+            )}
+          </div>
+
+          <div 
+            className="d-flex justify-content-between mb-2 fw-semibold"
+            style={{ color: '#000000' }}
+          >
+            <span>Productos ({cartItems.reduce((sum, item) => sum + item.cantidad, 0)})</span>
+            <span style={{ color: '#000000' }}>${subtotal.toLocaleString('es-CL')}</span>
+          </div>
+
+          {/* Descuento DUOC */}
+          {hasDuocDiscount && (
+            <div 
+              className="d-flex justify-content-between mb-2 fw-semibold"
+              style={{ color: '#000000' }}
+            >
+              <span>
+                Descuento DUOC 20% 
+                <Badge bg="success" className="ms-2 border-2 border-dark" style={{ backgroundColor: '#90EE90', color: '#000000' }}>
+                  🎓
+                </Badge>
+              </span>
+              <span style={{ color: '#FF6B6B' }}>-${duocDiscount.toLocaleString('es-CL')}</span>
+            </div>
+          )}
+
+          {/* Descuento por código */}
+          {appliedDiscount && (
+            <div 
+              className="d-flex justify-content-between mb-2 fw-semibold"
+              style={{ color: '#000000' }}
+            >
+              <span>
+                Descuento {appliedDiscount.code}
+                <Badge bg="info" className="ms-2 border-2 border-dark" style={{ backgroundColor: '#87CEEB', color: '#000000' }}>
+                  💰
+                </Badge>
+              </span>
+              <span style={{ color: '#FF6B6B' }}>-${codeDiscount.toLocaleString('es-CL')}</span>
+            </div>
+          )}
+          
           <div 
             className="d-flex justify-content-between mb-2 fw-semibold"
             style={{ color: '#000000' }}
           >
             <span>
-              Descuento DUOC 20% 
-              <Badge bg="success" className="ms-2 border-2 border-dark" style={{ backgroundColor: '#90EE90', color: '#000000' }}>
-                🎓
-              </Badge>
+              Envío
+              {envio === 0 ? (
+                <Badge bg="success" className="ms-2 border-2 border-dark" style={{ backgroundColor: '#90EE90', color: '#000000' }}>
+                  🚚 Gratis
+                </Badge>
+              ) : (
+                <Badge bg="secondary" className="ms-2 border-2 border-dark" style={{ backgroundColor: '#dedd8ff5', color: '#000000' }}>
+                  ${envio.toLocaleString('es-CL')}
+                </Badge>
+              )}
             </span>
-            <span style={{ color: '#FF6B6B' }}>-${duocDiscount.toLocaleString('es-CL')}</span>
+            <span className={envio === 0 ? "fw-bold text-success" : "fw-bold"} style={{ color: envio === 0 ? '#000000' : '#000000' }}>
+              {envio === 0 ? 'Gratis' : `$${envio.toLocaleString('es-CL')}`}
+            </span>
           </div>
-        )}
-        
-        <div 
-          className="d-flex justify-content-between mb-2 fw-semibold"
-          style={{ color: '#000000' }}
-        >
-          <span>
-            Envío
-            {envio === 0 ? (
-              <Badge bg="success" className="ms-2 border-2 border-dark" style={{ backgroundColor: '#90EE90', color: '#000000' }}>
-                🚚 Gratis
-              </Badge>
-            ) : (
-              <Badge bg="secondary" className="ms-2 border-2 border-dark" style={{ backgroundColor: '#dedd8ff5', color: '#000000' }}>
-                ${envio.toLocaleString('es-CL')}
-              </Badge>
-            )}
-          </span>
-          <span className={envio === 0 ? "fw-bold text-success" : "fw-bold"} style={{ color: envio === 0 ? '#000000' : '#000000' }}>
-            {envio === 0 ? 'Gratis' : `$${envio.toLocaleString('es-CL')}`}
-          </span>
-        </div>
 
-        {/* Información de envío gratuito */}
-        {total < 30000 && (
-          <div 
-            className="small mb-3 p-2 rounded-3 border-2 border-dark text-center"
-            style={{
-              backgroundColor: '#dedd8ff5',
-              color: '#000000',
-              fontWeight: '500'
-            }}
-          >
-            <span style={{ color: '#FF6B6B' }}>💡</span> Agrega ${(30000 - total).toLocaleString('es-CL')} más para envío gratis
-          </div>
-        )}
-        
-        <hr style={{ borderColor: '#000000', opacity: '0.6', borderWidth: '2px' }} />
-        
-        <div 
-          className="d-flex justify-content-between mb-3 fw-bold"
-          style={{ fontSize: '1.2rem', color: '#000000' }}
-        >
-          <strong>Total Final</strong>
-          <strong style={{ color: '#000000', fontSize: '1.4rem' }}>
-            ${totalFinal.toLocaleString('es-CL')}
-          </strong>
-        </div>
-
-        {/* Ahorro total */}
-        {(hasDuocDiscount || envio === 0) && (
-          <div 
-            className="text-center p-2 rounded-3 border-2 border-dark mb-3"
-            style={{
-              backgroundColor: '#90EE90',
-              color: '#000000',
-              fontWeight: '600'
-            }}
-          >
-            <span style={{ color: '#FFD700' }}>💰</span> Total ahorrado: 
-            ${(duocDiscount + (envio === 0 ? 3990 : 0)).toLocaleString('es-CL')}
-            {hasDuocDiscount && envio === 0 && " (Descuento + Envío)"}
-            {hasDuocDiscount && envio !== 0 && " (Descuento)"}
-            {!hasDuocDiscount && envio === 0 && " (Envío)"}
-          </div>
-        )}
-        
-        {!user ? (
-          <Alert 
-            variant="info" 
-            className="small border-3 border-dark rounded-3"
-            style={{
-              backgroundColor: '#dedd8ff5',
-              color: '#000000',
-              fontWeight: '600'
-            }}
-          >
-            💡 Inicia sesión para proceder con la compra
-          </Alert>
-        ) : null}
-        
-        <div className="d-grid gap-2">
-          <Button
-            variant="success"
-            size="lg"
-            className="border-3 border-dark rounded-pill fw-bold py-3"
-            style={{
-              background: '#dedd8ff5',
-              color: '#000000',
-              transition: 'all 0.3s ease'
-            }}
-            onClick={() => onCheckout(totalFinal)}
-            disabled={isCartEmpty || !user || hasLowStock}
-            onMouseEnter={(e) => {
-              if (!e.currentTarget.disabled) {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 20px rgba(222, 221, 143, 0.6)';
-                e.currentTarget.style.backgroundColor = '#FFD700';
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-              e.currentTarget.style.backgroundColor = '#dedd8ff5';
-            }}
-          >
-            {!user ? 'Inicia Sesión para Comprar' : 
-             hasLowStock ? 'Revisa el Stock' : 
-             `Finalizar Compra - $${totalFinal.toLocaleString('es-CL')}`}
-          </Button>
-          
-          {isCartEmpty && (
-            <Button 
-              as={Link} 
-              to="/productos" 
-              variant="outline-dark" 
-              className="rounded-pill fw-bold py-2 border-3"
+          {/* Información de envío gratuito */}
+          {total < 30000 && (
+            <div 
+              className="small mb-3 p-2 rounded-3 border-2 border-dark text-center"
               style={{
                 backgroundColor: '#dedd8ff5',
                 color: '#000000',
+                fontWeight: '500'
+              }}
+            >
+              <span style={{ color: '#FF6B6B' }}>💡</span> Agrega ${(30000 - total).toLocaleString('es-CL')} más para envío gratis
+            </div>
+          )}
+          
+          <hr style={{ borderColor: '#000000', opacity: '0.6', borderWidth: '2px' }} />
+          
+          <div 
+            className="d-flex justify-content-between mb-3 fw-bold"
+            style={{ fontSize: '1.2rem', color: '#000000' }}
+          >
+            <strong>Total Final</strong>
+            <strong style={{ color: '#000000', fontSize: '1.4rem' }}>
+              ${totalFinal.toLocaleString('es-CL')}
+            </strong>
+          </div>
+
+          {/* Ahorro total */}
+          {(hasDuocDiscount || envio === 0 || appliedDiscount) && (
+            <div 
+              className="text-center p-2 rounded-3 border-2 border-dark mb-3"
+              style={{
+                backgroundColor: '#90EE90',
+                color: '#000000',
+                fontWeight: '600'
+              }}
+            >
+              <span style={{ color: '#FFD700' }}>💰</span> Total ahorrado: 
+              ${(duocDiscount + codeDiscount + (envio === 0 ? 3990 : 0)).toLocaleString('es-CL')}
+            </div>
+          )}
+          
+          {!user ? (
+            <Alert 
+              variant="info" 
+              className="small border-3 border-dark rounded-3"
+              style={{
+                backgroundColor: '#dedd8ff5',
+                color: '#000000',
+                fontWeight: '600'
+              }}
+            >
+              💡 Inicia sesión para proceder con la compra
+            </Alert>
+          ) : null}
+          
+          <div className="d-grid gap-2">
+            <Button
+              variant="success"
+              size="lg"
+              className="border-3 border-dark rounded-pill fw-bold py-3"
+              style={{
+                background: '#dedd8ff5',
+                color: '#000000',
                 transition: 'all 0.3s ease'
               }}
+              onClick={handleOpenPaymentModal}
+              disabled={isCartEmpty || !user || hasLowStock}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 8px 20px rgba(222, 221, 143, 0.6)';
-                e.currentTarget.style.backgroundColor = '#FFD700';
+                if (!e.currentTarget.disabled) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(222, 221, 143, 0.6)';
+                  e.currentTarget.style.backgroundColor = '#FFD700';
+                }
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
@@ -236,12 +357,56 @@ const CartSummary = ({ cartItems, total, onCheckout, user }) => {
                 e.currentTarget.style.backgroundColor = '#dedd8ff5';
               }}
             >
-              Seguir Comprando
+              {!user ? 'Inicia Sesión para Comprar' : 
+               hasLowStock ? 'Revisa el Stock' : 
+               `Finalizar Compra - $${totalFinal.toLocaleString('es-CL')}`}
             </Button>
-          )}
-        </div>
-      </Card.Body>
-    </Card>
+            
+            {isCartEmpty && (
+              <Button 
+                as={Link} 
+                to="/productos" 
+                variant="outline-dark" 
+                className="rounded-pill fw-bold py-2 border-3"
+                style={{
+                  backgroundColor: '#dedd8ff5',
+                  color: '#000000',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(222, 221, 143, 0.6)';
+                  e.currentTarget.style.backgroundColor = '#FFD700';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.backgroundColor = '#dedd8ff5';
+                }}
+              >
+                Seguir Comprando
+              </Button>
+            )}
+          </div>
+        </Card.Body>
+      </Card>
+
+      {/* Modales de pago */}
+      <PaymentConfirmationModal
+        show={showPaymentModal}
+        onHide={() => setShowPaymentModal(false)}
+        onContinue={handleContinueToPayment}
+        totalFinal={totalFinal}
+      />
+
+      <CreditCardModal
+        show={showCreditCardModal}
+        onHide={() => setShowCreditCardModal(false)}
+        onPaymentSuccess={handlePaymentSuccess}
+        totalFinal={totalFinal}
+        discountCode={appliedDiscount?.code}
+      />
+    </>
   );
 };
 

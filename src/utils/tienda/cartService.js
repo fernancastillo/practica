@@ -211,5 +211,52 @@ export const cartService = {
   getTotalItems: () => {
     const cartItems = cartService.getCart();
     return cartItems.reduce((total, item) => total + item.cantidad, 0);
-  }
+  },
+
+    validateDiscountCode: (code) => {
+    const validCodes = {
+      'SV2500': {
+        discount: 2500,
+        type: 'fixed',
+        minPurchase: 0,
+        description: 'Descuento especial de $2.500',
+        valid: true
+      }
+    };
+
+    return validCodes[code] || null;
+  },
+
+  // ✅ CALCULAR DESCUENTO POR CÓDIGO
+  calculateDiscount: (total, discountCode) => {
+    if (!discountCode) return 0;
+
+    const discountInfo = cartService.validateDiscountCode(discountCode);
+    if (!discountInfo) return 0;
+
+    // Verificar compra mínima si existe
+    if (total < discountInfo.minPurchase) {
+      return 0;
+    }
+
+    if (discountInfo.type === 'fixed') {
+      return Math.min(discountInfo.discount, total);
+    } else if (discountInfo.type === 'percentage') {
+      return (total * discountInfo.discount) / 100;
+    }
+
+    return 0;
+  },
+
+  // ✅ CALCULAR TOTAL FINAL CON TODOS LOS DESCUENTOS
+  calculateFinalTotal: (subtotal, shipping, duocDiscount = 0, discountCode = '') => {
+    const codeDiscount = cartService.calculateDiscount(subtotal, discountCode);
+    let finalTotal = subtotal - duocDiscount - codeDiscount + shipping;
+    
+    // Asegurar que el total no sea negativo
+    return Math.max(0, finalTotal);
+  }  
+
 };
+
+
