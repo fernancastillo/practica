@@ -9,7 +9,6 @@ import { dataService } from './utils/dataService'
 // Función async para inicializar datos antes de renderizar
 const initializeApp = async () => {
   try {
-    console.log('🔄 Inicializando datos de la aplicación...');
     
     // Inicializar datos
     const success = dataService.initializeData();
@@ -23,25 +22,16 @@ const initializeApp = async () => {
     const usuarios = dataService.getUsuarios();
     const ordenes = dataService.getOrdenes();
     
-    console.log('📦 Productos cargados:', productos.length);
-    console.log('👤 Usuarios cargados:', usuarios.length);
-    console.log('📋 Órdenes cargadas:', ordenes.length);
-    
     if (productos.length === 0) {
       console.warn('⚠️ No se cargaron productos, forzando reset...');
       dataService.resetData();
     }
-    
-    console.log('✅ Inicialización completada exitosamente');
     return true;
   } catch (error) {
-    console.error('💥 Error crítico inicializando datos:', error);
     
     // Último intento con reset completo
     try {
-      console.log('🔄 Intentando reset de emergencia...');
       dataService.resetData();
-      console.log('✅ Datos reseteados de emergencia');
       return true;
     } catch (resetError) {
       console.error('💥 Error incluso en reset de emergencia:', resetError);
@@ -60,9 +50,7 @@ initializeApp().then((success) => {
         </BrowserRouter>
       </StrictMode>,
     );
-    console.log('🚀 Aplicación React montada correctamente');
   } else {
-    console.error('❌ No se pudo inicializar la aplicación - Error crítico');
     // Mostrar mensaje de error al usuario
     document.getElementById('root').innerHTML = `
       <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8d7da; color: #721c24; font-family: Arial, sans-serif;">

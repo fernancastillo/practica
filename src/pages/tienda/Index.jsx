@@ -1,4 +1,3 @@
-// src/pages/tienda/Index.jsx
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Button, Badge, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -28,11 +27,9 @@ const Index = () => {
       setLoading(true);
       setError(null);
       
-      console.log('🔄 Cargando productos para página principal...');
       
       // Verificar que los productos existan en localStorage
       const productosEnStorage = dataService.getProductos();
-      console.log('📦 Productos encontrados en storage:', productosEnStorage.length);
       
       if (!productosEnStorage || productosEnStorage.length === 0) {
         const errorMsg = 'No se encontraron productos en el sistema.';
@@ -45,7 +42,6 @@ const Index = () => {
       
       // Obtener productos con stock real considerando el carrito
       const productosConStock = getProductosConStockActual();
-      console.log('📊 Productos con stock calculado:', productosConStock.length);
       
       if (productosConStock.length === 0) {
         console.warn('⚠️ No hay productos con stock disponible');
@@ -53,7 +49,6 @@ const Index = () => {
       
       // ✅ APLICAR OFERTAS a los productos
       const productosConOfertas = getProductosConOfertas();
-      console.log('🎯 Productos con ofertas aplicadas:', productosConOfertas.length);
       
       // Combinar stock actualizado con ofertas
       const productosFinales = productosConStock.map(productoStock => {
@@ -67,9 +62,6 @@ const Index = () => {
       // ✅ CONTAR PRODUCTOS EN OFERTA
       const productosOferta = getProductosEnOferta();
       setOfertasCount(productosOferta.length);
-      console.log('🔥 Productos en oferta:', productosOferta.length);
-      
-      console.log('✅ Productos cargados exitosamente:', productosFinales.length);
       
     } catch (err) {
       console.error('💥 Error crítico cargando productos:', err);
@@ -82,28 +74,20 @@ const Index = () => {
   };
 
   useEffect(() => {
-    // Debug inicial
-    console.log('🔍 DEBUG - Estado inicial del localStorage:');
-    console.log('📦 app_productos existe:', !!localStorage.getItem('app_productos'));
-    console.log('👤 app_usuarios existe:', !!localStorage.getItem('app_usuarios'));
-    console.log('📋 app_ordenes existe:', !!localStorage.getItem('app_ordenes'));
     
     loadProductsWithStockAndOffers();
     
     // Obtener categorías desde los datos originales
     const uniqueCategories = ['all', ...new Set(productosData.map((product) => product.categoria))];
     setCategories(uniqueCategories);
-    console.log('📂 Categorías disponibles:', uniqueCategories);
 
     // Escuchar cambios en el carrito para actualizar stock
     const handleCartUpdate = () => {
-      console.log('🛒 Evento cartUpdated - actualizando productos...');
       loadProductsWithStockAndOffers();
     };
 
     // Escuchar cambios de autenticación
     const handleAuthChange = () => {
-      console.log('🔐 Evento authStateChanged - actualizando interfaz...');
       loadProductsWithStockAndOffers();
     };
 
@@ -129,7 +113,6 @@ const Index = () => {
       );
     }
     setFilteredProducts(filtered);
-    console.log('🔍 Filtros aplicados - Productos mostrados:', filtered.length);
   }, [selectedCategory, searchTerm, products]);
 
   const handleAddToCart = (product) => {
@@ -189,7 +172,6 @@ const Index = () => {
 
   // Función para reintentar carga
   const handleRetry = () => {
-    console.log('🔄 Reintentando carga de productos...');
     loadProductsWithStockAndOffers();
   };
 

@@ -1,10 +1,9 @@
-// src/components/tienda/cart/CartSummary.jsx
 import React, { useState } from 'react';
 import { Card, Button, Alert, Badge, Form, InputGroup } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { cartService } from '../../../utils/tienda/cartService';
-import PaymentConfirmationModal from '../PaymentConfirmationModal';
-import CreditCardModal from '../CreditCardModal';
+import PaymentConfirmationModal from '../../../components/tienda/PaymentConfirmationModal';
+import CreditCardModal from '../../../components/tienda/CreditCardModal';
 
 const CartSummary = ({ cartItems, total, onCheckout, user }) => {
   const [discountCode, setDiscountCode] = useState('');
@@ -82,7 +81,14 @@ const CartSummary = ({ cartItems, total, onCheckout, user }) => {
   const handlePaymentSuccess = (paymentData) => {
     console.log('🔍 CartSummary - Pago exitoso, llamando onCheckout');
     setShowCreditCardModal(false);
-    onCheckout(totalFinal, appliedDiscount?.code, paymentData);
+    
+    // ✅ Asegurarse de que onCheckout se llame correctamente
+    if (typeof onCheckout === 'function') {
+      onCheckout(totalFinal, appliedDiscount?.code, paymentData);
+    } else {
+      console.error('❌ onCheckout no es una función');
+      alert('Error: No se pudo procesar el pago. Intenta nuevamente.');
+    }
   };
 
   return (
