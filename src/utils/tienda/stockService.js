@@ -1,13 +1,10 @@
-// src/utils/tienda/stockService.js
-
-// 🔄 Obtener productos actualizados con stock real desde el carrito
+// Obtener productos actualizados con stock real desde el carrito
 export const getProductosConStockActual = () => {
   try {
     const carrito = JSON.parse(localStorage.getItem('junimoCart')) || [];
     const productosBase = JSON.parse(localStorage.getItem('app_productos')) || [];
 
     const productosConStockActual = productosBase.map(producto => {
-      // ✅ SIEMPRE usar el stock original como base, NO stock_disponible
       const stockBase = producto.stock; // ← Stock original del producto
 
       // Buscar si ese producto está en el carrito
@@ -19,7 +16,7 @@ export const getProductosConStockActual = () => {
 
       return {
         ...producto,
-        stock_disponible // ✅ Este es calculado en tiempo real
+        stock_disponible 
       };
     });
 
